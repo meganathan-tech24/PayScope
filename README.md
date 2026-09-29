@@ -35,16 +35,16 @@ Tick each box as the work lands. The commit history mirrors this list.
 - [ ] Input validation and sanitization (zod) on body, query, and params
 - [ ] Rate limiting (stricter on auth routes), helmet, restricted CORS
 - [ ] Enumeration-safe login errors
-- [ ] Secrets only from environment variables, validated at startup
+- [x] Secrets only from environment variables, validated at startup
 
 ### Backend engineering
 
 - [ ] Modular, domain-oriented layers: routes, controllers, services, repositories
-- [ ] Centralized error handling with typed application errors
-- [ ] Structured JSON logging with log levels and automatic redaction
-- [ ] Request/correlation ID on every request (logs, DB records, responses)
-- [ ] Database-level `ApplicationLog` with async writes and a fallback logger
-- [ ] Prisma schema, committed migrations, indexes on filter/sort columns
+- [x] Centralized error handling with typed application errors
+- [x] Structured JSON logging with log levels and automatic redaction
+- [x] Request/correlation ID on every request (logs, DB records, responses)
+- [x] Database-level `ApplicationLog` with async writes and a fallback logger
+- [x] Prisma schema, committed migrations, indexes on filter/sort columns
 - [ ] OpenAPI/Swagger documentation
 
 ### Frontend engineering
@@ -59,7 +59,7 @@ Tick each box as the work lands. The commit history mirrors this list.
 - [x] TypeScript strict mode across the monorepo
 - [x] ESLint and Prettier enforced locally and in CI
 - [ ] Frontend tests (Vitest + React Testing Library)
-- [ ] Backend unit and integration tests (Vitest + Supertest, real PostgreSQL)
+- [x] Backend unit and integration tests (Vitest + Supertest, real PostgreSQL)
 - [ ] Playwright E2E test for the critical flow
 - [ ] GitHub Actions pipeline: type check, lint, format check, tests, build, E2E
 - [ ] Deployed with a managed PostgreSQL database, seeded with 10,000 employees

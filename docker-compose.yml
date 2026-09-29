@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: payscope-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: payscope
+      POSTGRES_PASSWORD: payscope
+      POSTGRES_DB: payscope
+    ports:
+      - '5432:5432'
+    volumes:
+      - payscope-pgdata:/var/lib/postgresql/data
+      - ./scripts/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U payscope']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  payscope-pgdata:

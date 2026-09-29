@@ -209,9 +209,3 @@ Built with an agentic AI coding tool guided by [`PROJECT_SPEC.md`](PROJECT_SPEC.
 - No password reset, email verification, or refresh-token rotation
 - USD normalization uses a static rate table and is approximate
 - Single-tenant only
-
----
-
-## License
-
-`<choose a license or remove this section>`

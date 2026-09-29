@@ -56,8 +56,8 @@ Tick each box as the work lands. The commit history mirrors this list.
 
 ### Quality
 
-- [ ] TypeScript strict mode across the monorepo
-- [ ] ESLint and Prettier enforced locally and in CI
+- [x] TypeScript strict mode across the monorepo
+- [x] ESLint and Prettier enforced locally and in CI
 - [ ] Frontend tests (Vitest + React Testing Library)
 - [ ] Backend unit and integration tests (Vitest + Supertest, real PostgreSQL)
 - [ ] Playwright E2E test for the critical flow

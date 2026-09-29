@@ -1,0 +1,9 @@
+{
+  "extends": "@payscope/typescript-config/node-library.json",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": ["src"]
+}

@@ -1,5 +1,7 @@
 import { createApp } from './app/app.js';
+import { config } from './app/config/config.js';
+import { logger } from './lib/logging/logger.js';
 
-const port = Number(process.env.PORT) || 4000;
-
-createApp().listen(port);
+createApp().listen(config.PORT, () => {
+  logger.info('Server started', { metadata: { port: config.PORT, env: config.NODE_ENV } });
+});

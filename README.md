@@ -15,7 +15,7 @@ Tick each box as the work lands. The commit history mirrors this list.
 
 ### Product features
 
-- [ ] Registration and login with JWT
+- [x] Registration and login with JWT
 - [ ] Employee management: create, view, edit, delete
 - [ ] Server-side search, filter (country, department, job title), sort, and pagination
 - [ ] CSV export (respects current filters)
@@ -29,17 +29,17 @@ Tick each box as the work lands. The commit history mirrors this list.
 
 ### Security
 
-- [ ] Passwords hashed (bcrypt/Argon2id), never stored or logged in plain text
+- [x] Passwords hashed (bcrypt/Argon2id), never stored or logged in plain text
 - [ ] JWT verification middleware protecting all employee and insights routes
 - [ ] Role-based access: `HR_MANAGER` (full), `VIEWER` (read-only)
-- [ ] Input validation and sanitization (zod) on body, query, and params
-- [ ] Rate limiting (stricter on auth routes), helmet, restricted CORS
-- [ ] Enumeration-safe login errors
+- [x] Input validation and sanitization (zod) on body, query, and params
+- [x] Rate limiting (stricter on auth routes), helmet, restricted CORS
+- [x] Enumeration-safe login errors
 - [x] Secrets only from environment variables, validated at startup
 
 ### Backend engineering
 
-- [ ] Modular, domain-oriented layers: routes, controllers, services, repositories
+- [x] Modular, domain-oriented layers: routes, controllers, services, repositories
 - [x] Centralized error handling with typed application errors
 - [x] Structured JSON logging with log levels and automatic redaction
 - [x] Request/correlation ID on every request (logs, DB records, responses)
@@ -160,6 +160,7 @@ Base path `/api/v1`. All routes except register and login require `Authorization
 | POST   | `/auth/register`        | Create an account, returns `{ user, token }`  |
 | POST   | `/auth/login`           | Log in, returns `{ user, token }`             |
 | GET    | `/auth/me`              | Current user                                  |
+| POST   | `/auth/logout`          | Client-side token discard (stateless)         |
 | GET    | `/employees`            | List with search, filters, sort, pagination   |
 | POST   | `/employees`            | Create (HR_MANAGER)                           |
 | GET    | `/employees/:id`        | Get one                                       |

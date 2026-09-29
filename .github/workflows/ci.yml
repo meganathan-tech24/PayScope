@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: payscope
+          POSTGRES_PASSWORD: payscope
+          POSTGRES_DB: payscope
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U payscope"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://payscope:payscope@localhost:5432/payscope
+      TEST_DATABASE_URL: postgresql://payscope:payscope@localhost:5432/payscope_test
+      JWT_SECRET: ci-test-secret-not-for-production-use
+      JWT_EXPIRES_IN: 1h
+      NODE_ENV: test
+      CORS_ORIGIN: http://localhost:5173
+      LOG_LEVEL: silent
+      LOG_DB_MIN_LEVEL: error
+      VITE_API_URL: http://localhost:4000/api/v1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Create test database
+        run: PGPASSWORD=payscope psql -h localhost -U payscope -d payscope -c "CREATE DATABASE payscope_test;"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Integration tests
+        run: pnpm test:integration
+
+      - name: Build
+        run: pnpm build
+
+      - name: E2E tests
+        run: pnpm test:e2e

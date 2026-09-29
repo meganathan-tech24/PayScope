@@ -18,8 +18,11 @@
   "dependencies": {
     "@payscope/types": "workspace:*",
     "@prisma/client": "^6.1.0",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
     "nanoid": "^5.0.9",
     "pino": "^9.6.0",
     "zod": "^3.24.1"
@@ -27,6 +30,7 @@
   "devDependencies": {
     "@payscope/eslint-config": "workspace:*",
     "@payscope/typescript-config": "workspace:*",
+    "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "^22.10.5",
     "@types/supertest": "^6.0.2",

@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  HR_MANAGER
+  VIEWER
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+}
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  FATAL
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(HR_MANAGER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Employee {
+  id             String         @id @default(uuid())
+  fullName       String
+  email          String         @unique
+  jobTitle       String
+  department     String
+  country        String
+  currency       String
+  salary         Int
+  employmentType EmploymentType
+  hireDate       DateTime       @db.Date
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([country])
+  @@index([department])
+  @@index([jobTitle])
+  @@index([salary])
+  @@index([country, jobTitle])
+}
+
+model ApplicationLog {
+  id          String   @id @default(uuid())
+  level       LogLevel
+  message     String
+  errorCode   String?
+  service     String?
+  environment String?
+  requestId   String?
+  method      String?
+  path        String?
+  statusCode  Int?
+  userId      String?
+  stack       String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([level])
+  @@index([requestId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([errorCode])
+}

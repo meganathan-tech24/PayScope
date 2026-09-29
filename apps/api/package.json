@@ -17,6 +17,7 @@
     "db:migrate:dev": "prisma migrate dev"
   },
   "dependencies": {
+    "@payscope/shared": "workspace:^",
     "@payscope/types": "workspace:*",
     "@prisma/client": "^6.1.0",
     "bcryptjs": "^2.4.3",

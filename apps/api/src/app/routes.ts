@@ -3,8 +3,11 @@ import { Router } from 'express';
 
 import { prisma } from '../database/prisma.js';
 import { ServiceUnavailableError } from '../lib/errors/app-error.js';
+import { authRouter } from '../modules/auth/auth.routes.js';
 
 export const router: Router = Router();
+
+router.use('/auth', authRouter);
 
 router.get('/health', async (req, res, next) => {
   try {

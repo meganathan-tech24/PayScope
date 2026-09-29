@@ -100,16 +100,19 @@ project-root/
 ├── apps/
 │   ├── web/                     # React app
 │   └── api/                     # Express app
+│       └── prisma/              # schema.prisma, migrations/, seed.ts — lives here, not at
+│                                 # the repo root: Prisma's client generator infers its
+│                                 # "project root" from the schema file's own directory, and
+│                                 # @prisma/client is deliberately only installed in apps/api
+│                                 # (avoids pnpm's non-hoisted node_modules resolution across
+│                                 # workspace packages) — co-locating them is required, not
+│                                 # just tidy. See docs/design-notes.md.
 ├── packages/
 │   ├── shared/                  # zod schemas, constants, pure utilities shared by web + api
 │   ├── types/                   # shared TypeScript types (API contracts, DTOs)
 │   ├── ui/                      # (optional) shared UI primitives; skip if web-only is simpler
 │   ├── eslint-config/
 │   └── typescript-config/
-├── prisma/
-│   ├── schema.prisma
-│   ├── migrations/
-│   └── seed.ts
 ├── tests/
 │   └── e2e/                     # Playwright
 ├── docs/

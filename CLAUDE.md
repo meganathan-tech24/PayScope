@@ -6,7 +6,7 @@ Full requirements live in `PROJECT_SPEC.md`. Read it at the start of every sessi
 PayScope is a salary management and pay insights app for an HR Manager at ACME (10,000 employees, multiple countries). It is a hiring assessment: reviewers value clear thinking, good engineering judgment, meaningful tests, and intentional AI use. Do not over-engineer.
 
 ## Stack
-- Monorepo: pnpm workspaces + Turborepo (`apps/web`, `apps/api`, `packages/*`, `prisma/`)
+- Monorepo: pnpm workspaces + Turborepo (`apps/web`, `apps/api` incl. `apps/api/prisma/`, `packages/*`)
 - Web: React, TypeScript, Vite, Tailwind CSS, React Router, TanStack Query
 - API: Node.js, Express, TypeScript, JWT, zod, pino
 - DB: PostgreSQL + Prisma (migrations committed)

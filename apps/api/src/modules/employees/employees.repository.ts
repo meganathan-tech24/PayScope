@@ -3,7 +3,63 @@ import { Prisma, type Employee } from '@prisma/client';
 import { prisma } from '../../database/prisma.js';
 import { ConflictError, NotFoundError } from '../../lib/errors/app-error.js';
 
-import type { EmployeeInput } from './employees.schema.js';
+import type { EmployeeInput, EmployeeSortField } from './employees.schema.js';
+
+export interface EmployeeFilters {
+  search?: string;
+  country?: string;
+  department?: string;
+  jobTitle?: string;
+}
+
+export interface EmployeeSort {
+  sortBy: EmployeeSortField;
+  sortDir: 'asc' | 'desc';
+}
+
+export function buildEmployeeWhere(filters: EmployeeFilters): Prisma.EmployeeWhereInput {
+  const where: Prisma.EmployeeWhereInput = {};
+
+  // Exact matches, so the btree indexes on these columns stay usable.
+  if (filters.country) where.country = filters.country;
+  if (filters.department) where.department = filters.department;
+  if (filters.jobTitle) where.jobTitle = filters.jobTitle;
+
+  if (filters.search) {
+    where.OR = [
+      { fullName: { contains: filters.search, mode: 'insensitive' } },
+      { email: { contains: filters.search, mode: 'insensitive' } },
+    ];
+  }
+
+  return where;
+}
+
+export function buildEmployeeOrderBy(
+  sort: EmployeeSort,
+): Prisma.EmployeeOrderByWithRelationInput[] {
+  // id as the final tiebreaker gives a total order, so pages never overlap or skip rows.
+  return [{ [sort.sortBy]: sort.sortDir }, { id: 'asc' }];
+}
+
+export async function listEmployees(options: {
+  filters: EmployeeFilters;
+  sort: EmployeeSort;
+  skip: number;
+  take: number;
+}): Promise<{ items: Employee[]; total: number }> {
+  const where = buildEmployeeWhere(options.filters);
+  const [total, items] = await prisma.$transaction([
+    prisma.employee.count({ where }),
+    prisma.employee.findMany({
+      where,
+      orderBy: buildEmployeeOrderBy(options.sort),
+      skip: options.skip,
+      take: options.take,
+    }),
+  ]);
+  return { items, total };
+}
 
 const EMAIL_TAKEN = () =>
   new ConflictError('An employee with this email already exists', 'EMPLOYEE_EMAIL_TAKEN');

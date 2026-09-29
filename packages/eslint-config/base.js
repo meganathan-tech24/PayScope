@@ -27,7 +27,11 @@ export const baseConfig = [
           alphabetize: { order: 'asc', caseInsensitive: true },
         },
       ],
+      // TypeScript already validates that imports resolve and exports exist;
+      // eslint-plugin-import's resolver isn't configured for path/workspace
+      // resolution and produces false positives (e.g. ESM-only packages).
       'import/no-unresolved': 'off',
+      'import/named': 'off',
     },
   },
   {

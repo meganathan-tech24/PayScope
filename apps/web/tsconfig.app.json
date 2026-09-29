@@ -1,0 +1,10 @@
+{
+  "extends": "@payscope/typescript-config/react-library.json",
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": true,
+    "types": ["vite/client"],
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}

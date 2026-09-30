@@ -5,12 +5,14 @@ import { prisma } from '../database/prisma.js';
 import { ServiceUnavailableError } from '../lib/errors/app-error.js';
 import { createAuthRouter } from '../modules/auth/auth.routes.js';
 import { employeesRouter } from '../modules/employees/employees.routes.js';
+import { insightsRouter } from '../modules/insights/insights.routes.js';
 
 export function createRouter(): Router {
   const router = Router();
 
   router.use('/auth', createAuthRouter());
   router.use('/employees', employeesRouter);
+  router.use('/insights', insightsRouter);
 
   router.get('/health', async (req, res, next) => {
     try {

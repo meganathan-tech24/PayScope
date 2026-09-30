@@ -1,10 +1,10 @@
 import { once } from 'node:events';
 
-import type { ApiSuccessEnvelope, EmployeeDirectory, EmployeeFull, Role } from '@payscope/types';
+import type { ApiSuccessEnvelope, EmployeeDirectory, EmployeeFull } from '@payscope/types';
 import type { NextFunction, Request, Response } from 'express';
 
 import { toCsvRow } from '../../lib/csv.js';
-import { UnauthorizedError } from '../../lib/errors/app-error.js';
+import { roleOf } from '../../lib/request-role.js';
 
 import type {
   EmployeeInput,
@@ -15,13 +15,6 @@ import * as service from './employees.service.js';
 
 // validate() has already replaced req.query/params/body with the parsed values.
 const idOf = (req: Request): string => req.params.id as string;
-// authenticate has already set req.user on every employees route; the check is
-// here so a route wired up without it fails closed instead of guessing a role.
-function roleOf(req: Request): Role {
-  if (!req.user) throw new UnauthorizedError();
-  return req.user.role;
-}
-
 function envelope<T>(req: Request, data: T): ApiSuccessEnvelope<T> {
   return { success: true, data, meta: { requestId: req.requestId } };
 }

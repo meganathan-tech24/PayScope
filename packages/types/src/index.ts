@@ -54,3 +54,80 @@ export interface EmployeeFull extends EmployeeDirectory {
 }
 
 export type EmployeeFor<R extends Role> = R extends 'HR_MANAGER' ? EmployeeFull : EmployeeDirectory;
+
+// Insights (aggregated pay statistics). Money is integer minor units of `currency`;
+// in the USD view it is US cents, computed from a static rate table and approximate.
+
+export type InsightView = 'native' | 'usd';
+
+export interface InsightMeta {
+  view: InsightView;
+  /** True for the USD view: static illustrative rates, never live FX. */
+  approximate: boolean;
+}
+
+export interface InsightStatsRow {
+  key: string;
+  currency: string;
+  headcount: number;
+  min: number;
+  p25: number;
+  median: number;
+  avg: number;
+  p75: number;
+  max: number;
+}
+
+export interface InsightStats extends InsightMeta {
+  rows: InsightStatsRow[];
+  /** Groups left out because a VIEWER may not see groups this small. 0 for HR_MANAGER. */
+  suppressedGroups: number;
+}
+
+export interface HeadcountRow {
+  key: string;
+  headcount: number;
+}
+
+export interface SalaryBandBucket {
+  from: number;
+  to: number;
+  count: number;
+}
+
+export interface SalaryBands extends InsightMeta {
+  currency: string;
+  headcount: number;
+  buckets: SalaryBandBucket[];
+  /** True when a VIEWER asked about a set too small to show; buckets are then empty. */
+  suppressed: boolean;
+}
+
+export type TenureBandLabel = '<1y' | '1-3y' | '3-5y' | '5-10y' | '10y+';
+
+export interface TenureBand {
+  band: TenureBandLabel;
+  currency: string;
+  headcount: number;
+  median: number;
+  avg: number;
+}
+
+export interface TenureSummary extends InsightMeta {
+  bands: TenureBand[];
+  suppressedGroups: number;
+}
+
+export interface OutlierRow {
+  id: string;
+  fullName: string;
+  jobTitle: string;
+  country: string;
+  currency: string;
+  employmentType: EmployeeDirectory['employmentType'];
+  salary: number;
+  groupMedian: number;
+  /** (salary - groupMedian) / groupMedian, as a percentage. */
+  deviationPct: number;
+  groupSize: number;
+}

@@ -6,6 +6,8 @@ import {
 } from '@payscope/shared';
 import { z } from 'zod';
 
+import { optionalFilter } from '../../lib/optional-filter.js';
+
 // Postgres INTEGER tops out at 2,147,483,647; stay safely under it.
 export const MAX_SALARY_MINOR_UNITS = 2_000_000_000;
 
@@ -52,13 +54,6 @@ export const EMPLOYEE_SORT_FIELDS = [
   'hireDate',
   'createdAt',
 ] as const;
-
-// A blank filter (e.g. a cleared search box) means "no filter", not a 400.
-const optionalFilter = <T extends z.ZodTypeAny>(schema: T) =>
-  z.preprocess(
-    (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
-    schema.optional(),
-  );
 
 export const listEmployeesQuerySchema = z
   .object({

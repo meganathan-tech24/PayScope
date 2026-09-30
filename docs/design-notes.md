@@ -39,18 +39,54 @@ Trade-offs, alternatives considered, and performance measurements. Update as dec
 | Seed write strategy | Row-by-row upserts vs. delete + `createMany` | One interactive transaction (120 s timeout, default is 5 s): delete all employees, `createMany` in batches of 1,000, verify the stored count equals the generated count, upsert the demo users | All-or-nothing: a failure leaves the previous data instead of an empty table. Only `Employee` rows are deleted; other users and `ApplicationLog` rows are untouched. About 1.3 s for 10,000 rows (3.2 s wall including startup and one bcrypt hash). |
 | Demo accounts | One HR user vs. HR + Viewer; password handling | Two labelled demo accounts (`hr.demo@acme.example` HR_MANAGER, `viewer.demo@acme.example` VIEWER), same public documented password, overridable with `DEMO_USER_PASSWORD`; role set by the seed itself | Lets a reviewer try both roles immediately. The password is public by design (it's in the README), so deployed environments should override it. Not validated against the registration password rules; an override is trusted. |
 | Seed safety | Always allowed vs. guarded | Refuses when `NODE_ENV=production` unless `ALLOW_PRODUCTION_SEED=true`; `db:reset` runs the same check before it drops anything | The seed deletes every employee; a stray run against a production URL must not do that silently. Phase 10 has to seed production on purpose, hence an explicit opt-in rather than a hard block. `db:reset` wraps `prisma migrate reset --force`, which drops the database; it was not run during this phase (only the guard script and `db:seed` were), so run it once by hand on a throwaway database before relying on it. |
+| Node version | Node 24 LTS vs. Node 26 | Node 24 (Active LTS "Krypton", 24.21.0), pinned in `.nvmrc` (which CI reads), root `engines` and `@types/node` | Checked on nodejs.org on 2026-09-30: 24 is Active LTS and 26 is still "Current". `CLAUDE.md` describes 24 as "Current, enters LTS in October 2026", which is really 26's status; the number in the file (24) was followed and the wording flagged. Dockerfiles don't exist yet, so Phase 10 must pin the same version. |
+| pnpm 12 supply-chain policy | Relax `minimumReleaseAge` vs. re-resolve | Kept the default policy, regenerated the lockfile | pnpm 12 rejected two transitive versions published within the last day. A fresh resolution picked in-policy versions; loosening a security default to make an old lockfile pass was the wrong way round. Build scripts are approved by name in `pnpm-workspace.yaml` (`allowBuilds`: `@prisma/client`, `@prisma/engines`, `prisma`, `esbuild`). |
+| Express 5 | Stay on 4 vs. upgrade | Express 5.2.1 | Two real behaviour changes surfaced and were fixed: `req.query` is a read-only getter (so `validate()` shadows it with an own property), and `app.listen` reports startup failures through its callback (so `server.ts` now logs a fatal error and exits 1 instead of claiming to have started). |
+| Zod 4 deprecated helpers | Migrate to `z.email()`/`z.uuid()`/`z.strictObject()` vs. keep | Kept `.email()`, `.uuid()`, `.strict()` | They still work. Moving the string ones would change check order (format check before `.trim()`/`.toLowerCase()`), which would reject padded emails; tests guard that. Revisit when zod removes them. |
+| Prisma 7 client | Keep `prisma-client-js` vs. new `prisma-client` generator | New `prisma-client` generator, output `apps/api/src/generated/prisma` (git-, eslint-, prettier-ignored, generated on install), `@prisma/adapter-pg` driver adapter with a 5 s connection timeout, URL in `apps/api/prisma.config.ts` | The old provider is deprecated in v7. pg has no connection timeout by default (v6 used 5 s), and without one a health check against an unreachable database would hang. `prisma generate` reads the URL tolerantly so a fresh clone can install before `.env` exists. Seeding 10,000 rows takes 2.4 s now versus 1.3 s on Prisma 6 (adapter overhead), still fine. |
+| Held back: TypeScript 6.0.3 | 7.0.2 (latest) vs. 6.0.3 | 6.0.3 | `typescript-eslint` declares `typescript >=4.8.4 <6.1.0`; 7 would break linting. |
+| Held back: ESLint 9.x | 10.11.0 (latest) vs. 9.x | 9.39.5 (pnpm flags it deprecated) | `eslint-plugin-react`, `eslint-plugin-import` and `eslint-plugin-jsx-a11y` declare no ESLint 10 support. Revisit when they do. |
+| Held back: Tailwind 3.4 | 4.3.3 vs. 3.4 | 3.4.19 | `CLAUDE.md` allows v3 as long as a `tailwind.config.js` theme stays; v4 would rewrite the design-system stylesheet just before the UI phases build on it. |
+| `@types/node` | 26 (latest) vs. matching the runtime | `^24` | Types should describe the Node the code runs on, and that's 24. |
+
+## Toolchain versions (change request A, 2026-09-30)
+Verified with `pnpm view` and `pnpm outdated -r`, not assumed. Test counts before and after are identical (188 unit, 76 integration).
+
+| Package | Before | After | Note |
+| ------- | ------ | ----- | ---- |
+| Node.js | 20.9.0 | 24.21.0 (LTS) | `.nvmrc`, `engines`, CI |
+| pnpm | 9.15.0 | 12.8.1 | lockfile regenerated, `allowBuilds` added |
+| react / react-dom | 18.3.1 | 19.3.0 | pinned exactly (must match) |
+| react-router (was react-router-dom) | 6.30 | 8.4.0 | `future` flags removed (now default) |
+| @tanstack/react-query | 5.x | 5.104.0 | |
+| vite / @vitejs/plugin-react | 6.4 / 4.7 | 8.3.1 / 6.1.1 | |
+| vitest | 2.1 | 5.0.2 | |
+| typescript | 5.9.3 | 6.0.3 | 7.0.2 held (see decisions) |
+| typescript-eslint | 8.x | 8.71.0 | |
+| eslint / @eslint/js | 9.39.5 | 9.39.5 | 10.x held (see decisions) |
+| tailwindcss | 3.4.19 | 3.4.19 | 4.x held (see decisions) |
+| express / express-rate-limit | 4.22 / 7.5 | 5.2.1 / 8.7.0 | |
+| zod | 3.25 | 4.6.5 | |
+| pino / dotenv / nanoid / bcryptjs | 9.14 / 16.6 / 5.1 / 2.4 | 10.3.1 / 18.0.4 / 6.0.1 / 3.0.3 | dotenv `quiet: true`; old bcrypt hashes verified |
+| prisma / @prisma/client | 6.19.3 | 7.10.0 (+ adapter-pg 7.10.0) | the `prisma` `latest` tag is an 8.0 RC, excluded |
+| jsdom / @testing-library/jest-dom | 25 / 6.10 | 30.1.1 / 7.0.1 | |
+| lint-staged / prettier-plugin-tailwindcss / eslint-config-prettier | 15 / 0.6 / 9 | 17.6 / 0.8 / 10.1 | |
+
+`pnpm outdated -r` now lists only the deliberate holds: `eslint`, `@eslint/js`, `tailwindcss`, `typescript`, `@types/node` (26, we stay on 24 types) and Prisma's release-candidate tag.
+
+**Found during the upgrade, not caused by it (open):** `pnpm build` followed by `node dist/server.js` does not start. `@payscope/shared` is consumed as TypeScript source (`"main": "./src/index.ts"`), and its imports use `.js` specifiers (`./fx-rates.js`) that only resolve when a tool like `tsx` or Vitest maps them to the `.ts` files; plain Node fails with `ERR_MODULE_NOT_FOUND`. It has been broken since Phase 4 first imported runtime code from `shared`; `tsx` (dev), Vitest and the integration tests all transpile it and hide the problem. Fix before Phase 10 (deployment): either build `shared`/`types` to `dist` and point `main`/`exports` there, or bundle the API for production.
 
 ## Performance (10,000 employees)
-Measured on the real seed (`pnpm db:seed`), local Docker Postgres 16, single runs, HTTP times via curl on localhost with the demo HR login. Indicative only, not a benchmark.
+Measured on the real seed (`pnpm db:seed`), local Docker Postgres 16, single runs on the upgraded stack (Node 24, Express 5, Prisma 7 with the pg adapter). HTTP times are curl on localhost with the demo HR login; DB times are `EXPLAIN ANALYZE` from Phase 5 (database-level, unaffected by the upgrade). Indicative only, not a benchmark.
 
 | Operation | Measured time | Notes |
 | --------- | ------------- | ----- |
-| `pnpm db:seed` (10,000 employees + 2 demo users) | 1.3 s seeding, 3.2 s wall | Batches of 1,000 in one transaction, including one bcrypt (cost 12) hash. |
-| List, 25 rows, default sort, no filter | 13.7 ms HTTP | First request after startup, so it includes some warm-up. |
+| `pnpm db:seed` (10,000 employees + 2 demo users) | 2.4 s | Batches of 1,000 in one transaction, including one bcrypt (cost 12) hash. Was 1.3 s on Prisma 6. |
+| List, 25 rows, default sort, no filter | 8.7-10.5 ms HTTP (3 warm runs) | |
 | Country-filtered list, default sort | 1.3 ms DB | `Employee_country_idx` bitmap scan, then top-N sort on `fullName`. |
-| List filtered by country, sorted by salary desc | 6.4 ms HTTP | Uses the salary index. |
-| List filtered by country and jobTitle | 4.5 ms HTTP | Default sort. Sorted by salary desc, the planner scans the salary index and filters: 1.0 ms DB. |
+| List filtered by country, sorted by salary desc | 8.6 ms HTTP | Uses the salary index. |
+| List filtered by country and jobTitle | 7.2 ms HTTP | Default sort. Sorted by salary desc, the planner scans the salary index and filters: 1.0 ms DB. |
 | List with `search` (sequential `ILIKE`) | 24.4 ms HTTP; 8.5 ms DB | The slowest list shape; still fine at this size. |
-| Last page (page 400) | 18.5 ms HTTP | Offset pagination at the far end is still cheap at 10k rows. |
+| Last page (page 400) | 21.9 ms HTTP | Offset pagination at the far end is still cheap at 10k rows. |
 | Sort by an unindexed column (`hireDate`), no filter | 1.1 ms DB | Sequential scan + top-N heapsort. |
-| CSV export of all 10,000 rows | 301 ms, 1.43 MB, 10,001 lines | Streamed in batches of 500; a country-filtered export returned the matching 2,807 rows plus header. |
+| CSV export of all 10,000 rows | 249 ms, 1.43 MB, 10,001 lines | Streamed in batches of 500. |

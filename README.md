@@ -91,13 +91,12 @@ Monorepo with two independently deployable apps sharing only common packages.
 ```text
 apps/
   web/            React app (feature-based modules)
-  api/            Express app (domain modules)
+  api/            Express app (domain modules); prisma/ (schema, migrations) and src/seed live here
 packages/
   shared/         zod schemas, constants, pure utilities
   types/          shared TypeScript types
   eslint-config/  shared lint rules
   typescript-config/
-prisma/           schema, migrations, seed
 tests/e2e/        Playwright tests
 docs/             requirements, design notes, architecture, AI prompts, demo script
 ```
@@ -114,7 +113,7 @@ More detail and diagrams: [`docs/architecture.md`](docs/architecture.md).
 
 ## Getting started
 
-Prerequisites: Node.js 20+, pnpm, Docker.
+Prerequisites: Node.js 24 LTS (see `.nvmrc`), pnpm 12 (`corepack enable` picks the pinned version), Docker. `pnpm install` also generates the Prisma client into `apps/api/src/generated/` (git-ignored).
 
 ```bash
 pnpm install

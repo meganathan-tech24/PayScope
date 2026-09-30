@@ -77,19 +77,21 @@ describe('AppRoutes, signed-in area', () => {
   });
 
   it.each([
-    ['HR_MANAGER', 'HR Manager', /individual salaries/i],
-    ['VIEWER', 'Viewer', /never shown to your account/i],
+    ['HR_MANAGER', 'HR Manager'],
+    ['VIEWER', 'Viewer'],
   ] as const)(
-    'shows a %s their name, role and what that role can do',
-    async (role, label, text) => {
+    'shows a %s the dashboard, with their name and role in the header',
+    async (role, label) => {
       signedInAs(role);
 
       renderAt(<AppRoutes />, '/app');
 
-      expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
-      expect(screen.getAllByText('Ada Lovelace').length).toBeGreaterThan(0);
-      expect(screen.getAllByText(label).length).toBeGreaterThan(0);
-      expect(screen.getByText(text)).toBeInTheDocument();
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Dashboard' }),
+      ).toBeInTheDocument();
+      const header = within(screen.getByRole('banner', { hidden: true }));
+      expect(header.getByText('Ada Lovelace')).toBeInTheDocument();
+      expect(header.getByText(label)).toBeInTheDocument();
     },
   );
 

@@ -79,11 +79,12 @@ export function stubAppApi({ role, list, other }: AppApiOptions) {
     if (path.endsWith('/auth/me')) {
       return apiSuccess({ id: 'u1', name: 'Ada Lovelace', email: 'ada@example.com', role });
     }
+    // Tests get the first word on everything else, then these defaults apply.
+    const custom = await other?.(request);
+    if (custom) return custom;
     if (path.endsWith('/insights/headcount')) {
       return apiSuccess(OPTIONS[url.searchParams.get('by') ?? 'country'] ?? []);
     }
-    const custom = await other?.(request);
-    if (custom) return custom;
     if (path.endsWith('/employees') && request.method === 'GET') {
       return list ? list(request) : listPage([]);
     }

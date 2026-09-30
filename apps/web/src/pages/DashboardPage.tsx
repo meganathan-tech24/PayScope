@@ -1,35 +1,89 @@
-import { Card } from '../components/ui/Card';
+import { Alert } from '../components/ui/Alert';
+import { EmptyState } from '../components/ui/StateMessages';
 import { useAuth } from '../features/auth/hooks/useAuth';
-import { ROLE_LABEL, ROLE_SUMMARY } from '../features/auth/role-labels';
+import { CurrencyControls } from '../features/insights/components/CurrencyControls';
+import { ApproximateNote, HiddenGroupsNote } from '../features/insights/components/InsightNotes';
+import { SectionError, SectionSkeleton } from '../features/insights/components/SectionStates';
+import { SummaryCards } from '../features/insights/components/SummaryCards';
+import { useCountryStats, useHeadcount, useOutliers } from '../features/insights/hooks/useInsights';
+import { useInsightsParams } from '../features/insights/hooks/useInsightsParams';
+import { currencyOptions, resolveCurrency } from '../features/insights/lib/currencies';
 
-// Placeholder: the real dashboards arrive with the insights UI.
 export function DashboardPage() {
   const { user } = useAuth();
+  const { params, update } = useInsightsParams();
+  const isHr = user?.role === 'HR_MANAGER';
+
+  // The native country rows tell us which currencies exist; the active view (native or USD)
+  // feeds the cards.
+  const nativeStats = useCountryStats(false);
+  const activeStats = useCountryStats(params.usd);
+  const headcount = useHeadcount('country');
+  const options = currencyOptions(nativeStats.data?.rows ?? []);
+  const currency = resolveCurrency(params.currency, options);
+  const outliers = useOutliers(isHr, params.usd ? undefined : currency || undefined);
+
   if (!user) return null;
+
+  const rows = (activeStats.data?.rows ?? []).filter(
+    (row) => params.usd || row.currency === currency,
+  );
+  const employees = (headcount.data ?? []).reduce((sum, row) => sum + row.headcount, 0);
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="display text-3xl font-semibold">Dashboard</h1>
-      <Card>
-        <dl className="grid gap-4 sm:grid-cols-3">
-          <div>
-            <dt className="field-hint">Signed in as</dt>
-            <dd className="font-medium">{user.name}</dd>
-          </div>
-          <div>
-            <dt className="field-hint">Email</dt>
-            <dd className="break-all font-medium">{user.email}</dd>
-          </div>
-          <div>
-            <dt className="field-hint">Account type</dt>
-            <dd>
-              <span className="badge-brand">{ROLE_LABEL[user.role]}</span>
-            </dd>
-          </div>
-        </dl>
-        <p className="mt-6 max-w-prose text-neutral-700">{ROLE_SUMMARY[user.role]}</p>
-      </Card>
-      <p className="text-sm text-neutral-600">Pay insights will appear here.</p>
+      <div className="flex flex-col gap-1">
+        <h1 className="display text-3xl font-semibold">Dashboard</h1>
+        <p className="max-w-prose text-neutral-600">
+          How the organisation pays, by country, job title and department.
+        </p>
+      </div>
+
+      {!isHr ? (
+        <Alert tone="info">
+          You are viewing aggregated statistics. Individual salaries, minimum and maximum pay and
+          outliers are available to HR Managers only.
+        </Alert>
+      ) : null}
+
+      {nativeStats.isPending ? (
+        <SectionSkeleton label="Loading pay insights" />
+      ) : nativeStats.isError ? (
+        <SectionError what="the pay insights" onRetry={() => void nativeStats.refetch()} />
+      ) : options.length === 0 ? (
+        <EmptyState title="No pay data yet">
+          Statistics appear here once employees have been added.
+        </EmptyState>
+      ) : (
+        <>
+          <CurrencyControls
+            options={options}
+            currency={currency}
+            usd={params.usd}
+            onCurrency={(code) => update({ currency: code })}
+            onUsd={(on) => update({ usd: on })}
+          />
+          {params.usd ? (
+            <ApproximateNote excludedHeadcount={activeStats.data?.excludedHeadcount} />
+          ) : null}
+          {!params.usd || activeStats.data ? (
+            <HiddenGroupsNote count={activeStats.data?.suppressedGroups ?? 0} />
+          ) : null}
+
+          {activeStats.isError ? (
+            <SectionError what="the summary" onRetry={() => void activeStats.refetch()} />
+          ) : activeStats.isPending || headcount.isPending ? (
+            <SectionSkeleton label="Loading summary" />
+          ) : (
+            <SummaryCards
+              employees={employees}
+              countries={new Set(nativeStats.data.rows.map((row) => row.key)).size}
+              rows={rows}
+              outliers={isHr ? outliers.data?.total : undefined}
+            />
+          )}
+        </>
+      )}
     </div>
   );
 }

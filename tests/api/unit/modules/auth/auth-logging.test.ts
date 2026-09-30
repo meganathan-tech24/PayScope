@@ -44,64 +44,72 @@ function everyLoggedString(): string {
   return JSON.stringify([...consoleCalls, ...dbCalls]);
 }
 
+// One request cycle does several bcrypt (cost 12) hashes; on a busy machine that can pass the
+// default 5 s, which made this test fail once when the whole suite ran in parallel.
+const TEST_TIMEOUT_MS = 20_000;
+
 describe('auth logging never contains plaintext credentials', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('across register, a duplicate register, and both login failure modes', async () => {
-    const app = createApp();
-    vi.mocked(findUserByEmail).mockResolvedValueOnce(null);
-    vi.mocked(createUser).mockImplementationOnce(async (data) =>
-      buildUser({ email: data.email, name: data.name, passwordHash: data.passwordHash }),
-    );
+  it(
+    'across register, a duplicate register, and both login failure modes',
+    async () => {
+      const app = createApp();
+      vi.mocked(findUserByEmail).mockResolvedValueOnce(null);
+      vi.mocked(createUser).mockImplementationOnce(async (data) =>
+        buildUser({ email: data.email, name: data.name, passwordHash: data.passwordHash }),
+      );
 
-    const registerResponse = await request(app).post('/api/v1/auth/register').send({
-      name: 'Ada Lovelace',
-      email: 'ada@example.com',
-      password: PLAIN_PASSWORD,
-    });
-    expect(registerResponse.status).toBe(201);
-    const issuedToken: string = registerResponse.body.data.token;
+      const registerResponse = await request(app).post('/api/v1/auth/register').send({
+        name: 'Ada Lovelace',
+        email: 'ada@example.com',
+        password: PLAIN_PASSWORD,
+      });
+      expect(registerResponse.status).toBe(201);
+      const issuedToken: string = registerResponse.body.data.token;
 
-    // Duplicate registration - triggers the ConflictError -> logger.error path.
-    vi.mocked(findUserByEmail).mockResolvedValueOnce(buildUser());
-    await request(app).post('/api/v1/auth/register').send({
-      name: 'Ada Lovelace',
-      email: 'ada@example.com',
-      password: PLAIN_PASSWORD,
-    });
+      // Duplicate registration - triggers the ConflictError -> logger.error path.
+      vi.mocked(findUserByEmail).mockResolvedValueOnce(buildUser());
+      await request(app).post('/api/v1/auth/register').send({
+        name: 'Ada Lovelace',
+        email: 'ada@example.com',
+        password: PLAIN_PASSWORD,
+      });
 
-    // Wrong password - triggers the UnauthorizedError -> logger.error path.
-    const realHash = await hashPassword(PLAIN_PASSWORD);
-    vi.mocked(findUserByEmail).mockResolvedValueOnce(buildUser({ passwordHash: realHash }));
-    await request(app)
-      .post('/api/v1/auth/login')
-      .send({ email: 'ada@example.com', password: 'totally-wrong-password' });
+      // Wrong password - triggers the UnauthorizedError -> logger.error path.
+      const realHash = await hashPassword(PLAIN_PASSWORD);
+      vi.mocked(findUserByEmail).mockResolvedValueOnce(buildUser({ passwordHash: realHash }));
+      await request(app)
+        .post('/api/v1/auth/login')
+        .send({ email: 'ada@example.com', password: 'totally-wrong-password' });
 
-    // Unknown email - the dummy-hash path, also logger.error.
-    vi.mocked(findUserByEmail).mockResolvedValueOnce(null);
-    await request(app)
-      .post('/api/v1/auth/login')
-      .send({ email: 'nobody@example.com', password: 'anything' });
+      // Unknown email - the dummy-hash path, also logger.error.
+      vi.mocked(findUserByEmail).mockResolvedValueOnce(null);
+      await request(app)
+        .post('/api/v1/auth/login')
+        .send({ email: 'nobody@example.com', password: 'anything' });
 
-    // Successful login - no error, no log call, but included for completeness.
-    vi.mocked(findUserByEmail).mockResolvedValueOnce(buildUser({ passwordHash: realHash }));
-    await request(app)
-      .post('/api/v1/auth/login')
-      .send({ email: 'ada@example.com', password: PLAIN_PASSWORD });
+      // Successful login - no error, no log call, but included for completeness.
+      vi.mocked(findUserByEmail).mockResolvedValueOnce(buildUser({ passwordHash: realHash }));
+      await request(app)
+        .post('/api/v1/auth/login')
+        .send({ email: 'ada@example.com', password: PLAIN_PASSWORD });
 
-    const logged = everyLoggedString();
+      const logged = everyLoggedString();
 
-    expect(logged).not.toContain(PLAIN_PASSWORD);
-    expect(logged).not.toContain('totally-wrong-password');
-    expect(logged).not.toContain(issuedToken);
-    // Sanity check that transports were actually exercised (the failure
-    // paths above do log), so this test would fail loudly if nothing were
-    // ever logged rather than passing vacuously.
-    expect(
-      vi.mocked(consoleTransport.write).mock.calls.length +
-        vi.mocked(dbTransport.write).mock.calls.length,
-    ).toBeGreaterThan(0);
-  });
+      expect(logged).not.toContain(PLAIN_PASSWORD);
+      expect(logged).not.toContain('totally-wrong-password');
+      expect(logged).not.toContain(issuedToken);
+      // Sanity check that transports were actually exercised (the failure
+      // paths above do log), so this test would fail loudly if nothing were
+      // ever logged rather than passing vacuously.
+      expect(
+        vi.mocked(consoleTransport.write).mock.calls.length +
+          vi.mocked(dbTransport.write).mock.calls.length,
+      ).toBeGreaterThan(0);
+    },
+    TEST_TIMEOUT_MS,
+  );
 });

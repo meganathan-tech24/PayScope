@@ -16,7 +16,7 @@
     "@payscope/typescript-config": "workspace:*",
     "eslint": "^9.17.0",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "vitest": "^5.0.2"
   },
   "dependencies": {
     "i18n-iso-countries": "^7.14.0"

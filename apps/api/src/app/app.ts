@@ -7,7 +7,7 @@ import { createRateLimiter } from '../middleware/rate-limit.middleware.js';
 import { requestIdMiddleware } from '../middleware/request-id.middleware.js';
 
 import { config } from './config/config.js';
-import { router } from './routes.js';
+import { createRouter } from './routes.js';
 
 export function createApp(): Express {
   const app = express();
@@ -18,7 +18,7 @@ export function createApp(): Express {
   app.use(createRateLimiter());
   app.use(express.json({ limit: '1mb' }));
 
-  app.use('/api/v1', router);
+  app.use('/api/v1', createRouter());
 
   app.use(notFoundHandler);
   app.use(errorHandler);

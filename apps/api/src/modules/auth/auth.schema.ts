@@ -1,3 +1,4 @@
+import { ROLES } from '@payscope/shared';
 import { z } from 'zod';
 
 const emailSchema = z.string().trim().toLowerCase().email('Invalid email address');
@@ -14,6 +15,9 @@ export const registerBodySchema = z
     name: z.string().trim().min(1, 'Name is required').max(200),
     email: emailSchema,
     password: passwordSchema,
+    // Least privilege: a client that omits the role gets a VIEWER. Anything outside
+    // the enum (including a different case) is a validation error, never coerced.
+    role: z.enum(ROLES).default('VIEWER'),
   })
   .strict();
 

@@ -23,7 +23,12 @@ export async function register(input: RegisterInput): Promise<AuthResult> {
   }
 
   const passwordHash = await hashPassword(input.password);
-  const user = await createUser({ name: input.name, email: input.email, passwordHash });
+  const user = await createUser({
+    name: input.name,
+    email: input.email,
+    passwordHash,
+    role: input.role,
+  });
   const token = signToken({ sub: user.id, role: user.role });
 
   return { user: toAuthUser(user), token };

@@ -62,12 +62,35 @@ describe('registerBodySchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('rejects a client-supplied role field instead of silently dropping it', () => {
+  describe('role', () => {
+    const base = { name: 'Ada', email: 'ada@example.com', password: 'Passw0rd!' };
+
+    it('defaults to VIEWER when omitted (least privilege)', () => {
+      expect(registerBodySchema.parse(base).role).toBe('VIEWER');
+    });
+
+    it.each(['HR_MANAGER', 'VIEWER'])('accepts an explicit %s', (role) => {
+      expect(registerBodySchema.parse({ ...base, role }).role).toBe(role);
+    });
+
+    it.each([
+      ['an unknown value', 'ADMIN'],
+      ['a different case', 'viewer'],
+      ['an empty string', ''],
+      ['null', null],
+      ['a number', 1],
+      ['an array', ['VIEWER']],
+    ])('rejects %s', (_label, role) => {
+      expect(registerBodySchema.safeParse({ ...base, role }).success).toBe(false);
+    });
+  });
+
+  it('still rejects any other unexpected field instead of silently dropping it', () => {
     const result = registerBodySchema.safeParse({
       name: 'Ada',
       email: 'ada@example.com',
       password: 'Passw0rd!',
-      role: 'HR_MANAGER',
+      isAdmin: true,
     });
 
     expect(result.success).toBe(false);

@@ -8,6 +8,7 @@ vi.mock('@api/modules/auth/auth.repository.js', () => ({
 
 import type { User } from '@api/generated/prisma/client.js';
 import { ConflictError, UnauthorizedError } from '@api/lib/errors/app-error.js';
+import { verifyToken } from '@api/lib/jwt.js';
 import * as passwordLib from '@api/lib/password.js';
 import { createUser, findUserByEmail, findUserById } from '@api/modules/auth/auth.repository.js';
 import { getCurrentUser, login, register } from '@api/modules/auth/auth.service.js';
@@ -33,26 +34,63 @@ describe('register', () => {
   it('hashes the password before persisting it — never stores it in plain text', async () => {
     vi.mocked(findUserByEmail).mockResolvedValue(null);
     vi.mocked(createUser).mockImplementation(async (data) =>
-      buildUser({ email: data.email, name: data.name, passwordHash: data.passwordHash }),
+      buildUser({
+        email: data.email,
+        name: data.name,
+        passwordHash: data.passwordHash,
+        role: data.role,
+      }),
     );
 
-    await register({ name: 'Ada Lovelace', email: 'ada@example.com', password: 'Passw0rd!' });
+    await register({
+      name: 'Ada Lovelace',
+      email: 'ada@example.com',
+      password: 'Passw0rd!',
+      role: 'VIEWER',
+    });
 
     const createCall = vi.mocked(createUser).mock.calls[0]?.[0];
     expect(createCall?.passwordHash).not.toBe('Passw0rd!');
     expect(createCall?.passwordHash).toMatch(/^\$2[aby]\$12\$/);
   });
 
+  it.each(['HR_MANAGER', 'VIEWER'] as const)(
+    'persists the requested %s role and puts it in the token',
+    async (role) => {
+      vi.mocked(findUserByEmail).mockResolvedValue(null);
+      vi.mocked(createUser).mockImplementation(async (data) =>
+        buildUser({ email: data.email, name: data.name, role: data.role }),
+      );
+
+      const result = await register({
+        name: 'Ada',
+        email: 'ada@example.com',
+        password: 'Passw0rd!',
+        role,
+      });
+
+      expect(vi.mocked(createUser).mock.calls[0]?.[0].role).toBe(role);
+      expect(result.user.role).toBe(role);
+      expect(verifyToken(result.token)).toMatchObject({ sub: 'user-1', role });
+    },
+  );
+
   it('returns the user and a token, never the password hash', async () => {
     vi.mocked(findUserByEmail).mockResolvedValue(null);
     vi.mocked(createUser).mockImplementation(async (data) =>
-      buildUser({ email: data.email, name: data.name, passwordHash: data.passwordHash }),
+      buildUser({
+        email: data.email,
+        name: data.name,
+        passwordHash: data.passwordHash,
+        role: data.role,
+      }),
     );
 
     const result = await register({
       name: 'Ada Lovelace',
       email: 'ada@example.com',
       password: 'Passw0rd!',
+      role: 'HR_MANAGER',
     });
 
     expect(result.user).toEqual({
@@ -69,7 +107,7 @@ describe('register', () => {
     vi.mocked(findUserByEmail).mockResolvedValue(buildUser());
 
     await expect(
-      register({ name: 'Ada', email: 'ada@example.com', password: 'Passw0rd!' }),
+      register({ name: 'Ada', email: 'ada@example.com', password: 'Passw0rd!', role: 'VIEWER' }),
     ).rejects.toThrow(ConflictError);
     expect(createUser).not.toHaveBeenCalled();
   });
@@ -81,7 +119,7 @@ describe('register', () => {
     );
 
     await expect(
-      register({ name: 'Ada', email: 'ada@example.com', password: 'Passw0rd!' }),
+      register({ name: 'Ada', email: 'ada@example.com', password: 'Passw0rd!', role: 'VIEWER' }),
     ).rejects.toThrow(ConflictError);
   });
 });

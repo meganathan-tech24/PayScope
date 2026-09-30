@@ -44,6 +44,33 @@ describe('salary bands', () => {
     ).toBeInTheDocument();
   });
 
+  it('tells a viewer their bands use rounded steps, with rounded edges, and tells HR nothing of the kind', async () => {
+    start('VIEWER');
+    const viewerRegion = await section('Salary bands');
+
+    await waitFor(() => expect(table(viewerRegion)).toBeInTheDocument());
+    expect(
+      within(viewerRegion).getByText(
+        /Bands use rounded steps of €15K, so their ends are approximate/,
+      ),
+    ).toBeInTheDocument();
+    const viewerRows = within(table(viewerRegion)).getAllByRole('row', { hidden: true }).slice(1);
+    expect(viewerRows.map((row) => row.querySelector('th')?.textContent)).toEqual([
+      '€30,000.00 to €45,000.00',
+      '€45,000.00 to €60,000.00',
+      '€60,000.00 to €75,000.00',
+    ]);
+  });
+
+  it('shows an HR manager exact bands and no rounding note', async () => {
+    start('HR_MANAGER');
+    const region = await section('Salary bands');
+
+    await waitFor(() => expect(table(region)).toBeInTheDocument());
+
+    expect(within(region).queryByText(/rounded steps/)).not.toBeInTheDocument();
+  });
+
   it('asks for the selected currency, and for dollars in the USD view', async () => {
     const { calls } = start('HR_MANAGER', {}, '/app?currency=GBP');
     await waitFor(() =>

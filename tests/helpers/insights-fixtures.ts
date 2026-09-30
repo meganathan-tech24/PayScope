@@ -145,11 +145,23 @@ export function insightsApi({ role, override, hiddenGroups = 0 }: InsightsFixtur
         currency: usd ? 'USD' : (q.get('currency') ?? 'EUR'),
         headcount: 12,
         suppressed: false,
-        buckets: [
-          { from: 3_500_000, to: 5_000_000, count: 4 },
-          { from: 5_000_000, to: 6_500_000, count: 5 },
-          { from: 6_500_000, to: 8_000_000, count: 3 },
-        ],
+        // A viewer's bands sit on fixed rounded edges and say how wide a step is.
+        ...(role === 'VIEWER'
+          ? {
+              bucketWidth: 1_500_000,
+              buckets: [
+                { from: 3_000_000, to: 4_500_000, count: 4 },
+                { from: 4_500_000, to: 6_000_000, count: 5 },
+                { from: 6_000_000, to: 7_500_000, count: 3 },
+              ],
+            }
+          : {
+              buckets: [
+                { from: 3_500_000, to: 5_000_000, count: 4 },
+                { from: 5_000_000, to: 6_500_000, count: 5 },
+                { from: 6_500_000, to: 8_000_000, count: 3 },
+              ],
+            }),
       });
     }
 

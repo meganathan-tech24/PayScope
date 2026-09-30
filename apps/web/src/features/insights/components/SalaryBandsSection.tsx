@@ -55,6 +55,9 @@ export function SalaryBandsSection({ usd, currency }: { usd: boolean; currency: 
           />
           <p className="text-sm text-neutral-600">
             Each bar is labelled with the start of its band; the table gives both ends.
+            {bands?.bucketWidth
+              ? ` Bands use rounded steps of ${formatMoneyCompact(bands.bucketWidth, code)}, so their ends are approximate.`
+              : null}
           </p>
         </div>
       }

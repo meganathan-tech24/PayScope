@@ -1,10 +1,11 @@
-export type ButtonVariant = 'primary' | 'secondary' | 'signal' | 'outline-light';
+export type ButtonVariant = 'primary' | 'secondary' | 'signal' | 'outline-light' | 'danger';
 
 const VARIANT_CLASS: Record<ButtonVariant, string> = {
   primary: 'btn-primary',
   secondary: 'btn-secondary',
   signal: 'btn-signal',
   'outline-light': 'btn-outline-light',
+  danger: 'btn-danger',
 };
 
 export function buttonClass(variant: ButtonVariant, size: 'md' | 'lg' = 'md', extra?: string) {

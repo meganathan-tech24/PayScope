@@ -51,7 +51,7 @@ export interface AppApiOptions {
   /** Handles GET /employees; defaults to an empty page. */
   list?: (request: RecordedRequest) => Response | Promise<Response>;
   /** Handles anything else (writes, export, insights). Return undefined to fall through. */
-  other?: (request: RecordedRequest) => Response | Promise<Response> | undefined;
+  other?: (request: RecordedRequest) => Response | undefined | Promise<Response | undefined>;
 }
 
 const OPTIONS: Record<string, { key: string; headcount: number }[]> = {

@@ -1,10 +1,14 @@
+import type { EmployeeFull } from '@payscope/types';
 import { useEffect, useState } from 'react';
 
+import { Alert } from '../components/ui/Alert';
 import { Button } from '../components/ui/Button';
 import { EmptyState, ErrorState } from '../components/ui/StateMessages';
 import { useAuth } from '../features/auth/hooks/useAuth';
+import { DeleteEmployeeModal } from '../features/employees/components/DeleteEmployeeModal';
 import { EmployeeCards } from '../features/employees/components/EmployeeCards';
 import { EmployeeFilters } from '../features/employees/components/EmployeeFilters';
+import { EmployeeFormModal } from '../features/employees/components/EmployeeFormModal';
 import { EmployeeListSkeleton } from '../features/employees/components/EmployeeListSkeleton';
 import { EmployeeTable } from '../features/employees/components/EmployeeTable';
 import { ExportButton } from '../features/employees/components/ExportButton';
@@ -13,9 +17,14 @@ import { SortControls } from '../features/employees/components/SortControls';
 import { useEmployeeList } from '../features/employees/hooks/useEmployeeList';
 import { useEmployeeParams } from '../features/employees/hooks/useEmployeeParams';
 import { sortFieldsFor } from '../features/employees/lib/search-params';
-import { PAGE_SIZE } from '../features/employees/types';
+import { hasSalary, PAGE_SIZE, type EmployeeRow } from '../features/employees/types';
 
 const SEARCH_DEBOUNCE_MS = 300;
+
+type Dialog =
+  | { kind: 'form'; employee: EmployeeFull | null }
+  | { kind: 'delete'; employee: EmployeeRow }
+  | null;
 
 export function EmployeesPage() {
   const { user } = useAuth();
@@ -29,10 +38,39 @@ export function EmployeesPage() {
   }, [params.search]);
   const list = useEmployeeList({ ...params, search: requestSearch });
 
+  const [dialog, setDialog] = useState<Dialog>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  // Deleting the last row of the last page (or a hand-edited URL) can leave the page number
+  // past the end: step back to the last page instead of showing an empty list.
+  const totalPages = list.data?.meta.totalPages;
+  useEffect(() => {
+    if (totalPages && params.page > totalPages) update({ page: totalPages }, { replace: true });
+  }, [totalPages, params.page, update]);
+
   if (!user) return null;
   const isHr = user.role === 'HR_MANAGER';
   const employees = list.data?.data ?? [];
   const meta = list.data?.meta;
+
+  const renderActions = (employee: EmployeeRow) => (
+    <>
+      <Button
+        variant="secondary"
+        aria-label={`Edit ${employee.fullName}`}
+        onClick={() => hasSalary(employee) && setDialog({ kind: 'form', employee })}
+      >
+        Edit
+      </Button>
+      <Button
+        variant="secondary"
+        aria-label={`Delete ${employee.fullName}`}
+        onClick={() => setDialog({ kind: 'delete', employee })}
+      >
+        Delete
+      </Button>
+    </>
+  );
 
   function sortBy(field: string) {
     update({
@@ -52,8 +90,26 @@ export function EmployeesPage() {
               : 'Browse the employee directory. Individual salaries are not shown to your account.'}
           </p>
         </div>
-        <ExportButton params={params} />
+        <div className="flex flex-wrap items-start gap-3">
+          {isHr ? (
+            <Button onClick={() => setDialog({ kind: 'form', employee: null })}>
+              Add employee
+            </Button>
+          ) : null}
+          <ExportButton params={params} />
+        </div>
       </div>
+
+      {notice ? (
+        <div className="flex items-start gap-3">
+          <div className="flex-1">
+            <Alert tone="success">{notice}</Alert>
+          </div>
+          <Button variant="secondary" onClick={() => setNotice(null)}>
+            Dismiss
+          </Button>
+        </div>
+      ) : null}
 
       <EmployeeFilters
         params={params}
@@ -91,9 +147,15 @@ export function EmployeesPage() {
             params={params}
             showSalary={isHr}
             onSort={sortBy}
+            renderActions={isHr ? renderActions : undefined}
             busy={list.isPlaceholderData}
           />
-          <EmployeeCards employees={employees} showSalary={isHr} busy={list.isPlaceholderData} />
+          <EmployeeCards
+            employees={employees}
+            showSalary={isHr}
+            renderActions={isHr ? renderActions : undefined}
+            busy={list.isPlaceholderData}
+          />
           {meta ? (
             <Pagination
               page={meta.page ?? params.page}
@@ -105,6 +167,21 @@ export function EmployeesPage() {
           ) : null}
         </>
       )}
+
+      {dialog?.kind === 'form' ? (
+        <EmployeeFormModal
+          employee={dialog.employee}
+          onClose={() => setDialog(null)}
+          onSaved={setNotice}
+        />
+      ) : null}
+      {dialog?.kind === 'delete' ? (
+        <DeleteEmployeeModal
+          employee={dialog.employee}
+          onClose={() => setDialog(null)}
+          onDeleted={setNotice}
+        />
+      ) : null}
     </div>
   );
 }

@@ -42,6 +42,9 @@
   .btn-signal {
     @apply btn bg-signal font-semibold text-ink hover:bg-signal-600 focus-visible:ring-signal focus-visible:ring-offset-ink;
   }
+  .btn-danger {
+    @apply btn bg-danger text-white hover:bg-red-700 focus-visible:ring-danger;
+  }
   .btn-outline-light {
     @apply btn border border-ink-300 text-white hover:bg-ink-700 focus-visible:ring-white focus-visible:ring-offset-ink;
   }

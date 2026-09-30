@@ -1,8 +1,17 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
 
-export function AppQueryProvider({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+import { createQueryClient } from './query-client';
+
+export function AppQueryProvider({
+  children,
+  client,
+}: {
+  children: ReactNode;
+  /** Tests pass their own client (no retries); the app builds one. */
+  client?: QueryClient;
+}) {
+  const [queryClient] = useState(() => client ?? createQueryClient());
 
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }

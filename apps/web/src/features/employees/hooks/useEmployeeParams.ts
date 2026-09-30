@@ -15,10 +15,11 @@ export function useEmployeeParams() {
 
   // Changing a filter, the search or the sort returns to page 1; changing the page does not.
   const update = useCallback(
-    (patch: Partial<EmployeeListParams>) => {
+    (patch: Partial<EmployeeListParams>, options?: { replace?: boolean }) => {
       const changesResults = Object.keys(patch).some((key) => key !== 'page');
       setSearchParams(
         toSearchParams({ ...params, ...(changesResults ? { page: 1 } : {}), ...patch }),
+        options,
       );
     },
     [params, setSearchParams],

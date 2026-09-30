@@ -2,14 +2,15 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
+import { stubAppApi } from '@tests/helpers/app-api.js';
 import { apiSuccess, stubFetch } from '@tests/helpers/fetch-mock.js';
 import { renderAt } from '@tests/helpers/render.js';
 import { AppRoutes } from '@web/app/router/routes';
 import { TOKEN_KEY } from '@web/features/auth/services/token-storage';
 
-function signedInAs(role: 'HR_MANAGER' | 'VIEWER', name = 'Ada Lovelace') {
+function signedInAs(role: 'HR_MANAGER' | 'VIEWER') {
   window.localStorage.setItem(TOKEN_KEY, 'valid.token.value');
-  stubFetch(() => apiSuccess({ id: 'u1', name, email: 'ada@example.com', role }));
+  stubAppApi({ role });
 }
 
 describe('AppRoutes, public pages', () => {

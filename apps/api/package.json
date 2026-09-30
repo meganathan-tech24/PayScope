@@ -14,7 +14,9 @@
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
-    "db:migrate:dev": "prisma migrate dev"
+    "db:migrate:dev": "prisma migrate dev",
+    "db:seed": "tsx src/seed/run.ts",
+    "db:reset": "tsx src/seed/assert-safe.ts && prisma migrate reset --force --skip-seed && pnpm run db:seed"
   },
   "dependencies": {
     "@payscope/shared": "workspace:^",

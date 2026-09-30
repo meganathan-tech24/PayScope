@@ -97,7 +97,7 @@ packages/
   types/          shared TypeScript types
   eslint-config/  shared lint rules
   typescript-config/
-tests/e2e/        Playwright tests
+tests/            all tests (@payscope/tests): api/{unit,integration}, web, packages, e2e (Playwright, Phase 9)
 docs/             requirements, design notes, architecture, AI prompts, demo script
 ```
 
@@ -149,7 +149,7 @@ pnpm dev                        # web on :5173, api on :4000
 | `pnpm typecheck`       | TypeScript checks                     |
 | `pnpm lint`            | ESLint                                |
 | `pnpm format:check`    | Prettier check                        |
-| `pnpm test`            | Unit tests                            |
+| `pnpm test`            | Unit tests (api, web, packages)       |
 | `pnpm test:integration`| API integration tests (needs Postgres)|
 | `pnpm test:e2e`        | Playwright E2E tests                  |
 | `pnpm db:migrate`      | Apply Prisma migrations               |

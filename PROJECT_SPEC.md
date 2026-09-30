@@ -588,7 +588,7 @@ Run the critical flow for **both** roles, on a **desktop and a mobile viewport**
 
 Each phase ends with passing type-check, lint, format check and tests, and one or more small commits.
 
-**Status (from git history and code):** Phases 0 to 6 are done. Change requests A (toolchain upgrade), B (tests consolidated under `tests/`), C (role-aware auth and data) and D (spec sync) are done; E is deferred until before Phase 10. **Phase 7 is next.** The web app is still the Phase 1 scaffold (app shell, router and query provider, design tokens, no pages). CI is a skeleton with no E2E yet. Nothing is deployed.
+**Status (from git history and code):** Phases 0 to 7 are done. Change requests A (toolchain upgrade), B (tests consolidated under `tests/`), C (role-aware auth and data) and D (spec sync) are done; E is deferred until before Phase 10. **Phase 8 is next.** CI is a skeleton with no E2E yet. Nothing is deployed.
 
 **Phase 0: Requirements (no code)**
 Write `/docs/requirements.md` on **ONE page**: Goal, Persona, Scope and features, **What is deliberately left out and why**, Assumptions, Success criteria. Present it, list assumptions or open questions, and **wait for my approval**.
@@ -611,7 +611,7 @@ Deterministic seed (seeded RNG): 8-10 countries with matching currencies, realis
 **Phase 6: Insights module** (done)
 Percentile/statistics queries, bands, tenure, optional USD view, and the **HR-only outliers endpoint** (403 for `VIEWER`; the other insights endpoints return aggregated statistics to both roles). Record measured timings on 10k rows in `design-notes.md`. Tests on a small hand-checked dataset, including the role rules.
 
-**Phase 7: Web foundation, landing page and auth UI**
+**Phase 7: Web foundation, landing page and auth UI** (done)
 Providers, router (`/`, `/login`, `/register`, `/app`, `/app/employees`, 404 and 403 pages), `ProtectedRoute` and role guard, HTTP client with interceptors and auto-logout on 401, the **landing page**, the **single login page**, the **register page** (account type selector), AppShell with visible logout, and responsive navigation. Component tests for login, register, landing calls to action, and guards.
 
 **Phase 8: Employees UI, role-based dashboards and responsive pass**
@@ -715,4 +715,4 @@ If time is limited, protect this order of importance for the submission: **worki
 
 ## 19. Start here
 
-Phases 0 to 6 and change requests A to D are done (section 12). **Continue with Phase 7 only**, in plan mode, and wait for approval before each further phase. `CLAUDE.md` holds the standing workflow rules.
+Phases 0 to 7 and change requests A to D are done (section 12). **Continue with Phase 8 only**, in plan mode, and wait for approval before each further phase. `CLAUDE.md` holds the standing workflow rules.

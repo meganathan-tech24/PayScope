@@ -114,3 +114,11 @@ Key prompts and instructions given to the AI coding tool, and the decisions that
 - **What I changed or rejected, and why:** Did not change the salary-bands endpoint, which was outside the request, but flagged that its outer bucket edges for a VIEWER are still the exact minimum and maximum; recorded with the tightening options in design-notes.
 - **Outcome:** Unit 264 to 267, integration 168 to 173.
 
+---
+
+## Phase 7: Web foundation, landing page, single login, register
+- **Prompt / instruction:** Read `CLAUDE.md` and do Phase 7 only (providers, router with the required routes, HTTP client with JWT interceptor and auto-logout on 401, token storage justified in design-notes, ProtectedRoute and role guard, landing page, single login, register with an account type selector, 403 and 404, shared zod validation, responsive and accessible), plan mode first, tests under `tests/web`.
+- **What the AI proposed:** A 9-commit plan (approved before code): move the auth schemas to `@payscope/shared` (with a subpath so the login bundle skips the country data), design tokens and base components, HTTP client, auth provider and guards, router and layouts, login, register, landing, docs. localStorage for the token with the XSS vs CSRF trade-off written down.
+- **What I changed or rejected, and why:** Approved as proposed. Running the app corrected me twice: `PublicOnlyRoute` has to own the post-login redirect (a form-level redirect raced it), and logging out lands on `/login`, not the home page, so the dead navigation was removed and the test now checks the real page. Headless-Chrome checks found two 16 px links, now 44 px. A `react-hooks` lint rule rejected setting state in an effect (the initial state is now computed lazily) and an a11y rule rejected a click handler on a `nav` (now a document listener).
+- **Outcome:** Nine commits plus a logout fix. Typecheck, lint (0 errors, the one known warning), format, unit and integration tests pass. Counts: unit 267 to 350, integration 173. Verified in Chrome against the real API and at three widths.
+

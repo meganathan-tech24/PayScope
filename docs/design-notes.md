@@ -95,6 +95,39 @@ All tests live in the root `tests/` workspace package (`@payscope/tests`), mirro
 
 Verification: Vitest JSON reporter snapshots of every test's file and full name before the move and after it match exactly: 188 unit (API 178, web 2, shared 6, types 2) and 76 integration tests.
 
+## Web foundation (Phase 7)
+
+**Token storage: localStorage.** The API is a separate origin that takes `Authorization: Bearer` tokens, and the JWT is stateless and short-lived (1 h). The two realistic options are localStorage and an httpOnly cookie:
+
+| | localStorage | httpOnly cookie |
+| --- | --- | --- |
+| XSS | Injected script can read the token and send it away. The token is valid for at most an hour. | Script cannot read the cookie, but injected script can still make requests as the user while the page is open, so XSS remains serious either way. |
+| CSRF | Not exposed: the browser never attaches the token by itself. | Exposed: the browser attaches the cookie to any request to the API, so it needs `SameSite`, a CSRF token or double-submit, and an `Origin` check. |
+| Cross-origin API | Works with the current CORS setup. | Needs credentialed CORS, `SameSite=None; Secure` (or the web and API on one site), and new API code to set, clear and rotate the cookie. |
+| Effort and blast radius | One small module (`token-storage.ts`). | Changes on the API, the deployment topology and the client. |
+
+Choice: **localStorage**, for a stateless bearer API with no cookie or CSRF machinery, with the XSS risk reduced rather than removed: React escapes output and the app uses no `dangerouslySetInnerHTML`, no third-party scripts, the token expires in an hour, the session is re-validated with `GET /auth/me` on every load, any 401 ends the session, and a strict Content-Security-Policy should be set on the static host at deployment (Phase 10). Roles are also enforced on the server, so a stolen token gives only that user's access. Production alternative: a same-site backend-for-frontend or API issuing an httpOnly, `Secure`, `SameSite=Strict` cookie with refresh-token rotation and a CSRF token. Because all token access is behind `token-storage.ts` (and the HTTP client's token getter), that switch is local.
+
+| Decision | Options considered | Choice | Reason |
+| -------- | ------------------ | ------ | ------ |
+| Where the role comes from | Decode the JWT vs. ask the server | Ask the server (`GET /auth/me` on load; the login or register response otherwise) | A client-side token can say anything; a test proves a token claiming `HR_MANAGER` still yields the server's `VIEWER`. |
+| A 401 | Log out on any 401 vs. only when a token was sent | Only when the request carried a token | A wrong password on login is an ordinary form error; a 401 on a token means the session ended and triggers the auto-logout with an "expired" notice. |
+| Server unreachable at load | Drop the token vs. keep it | Keep it, show signed out | A network blip should not sign anyone out; a reload retries. |
+| Where a signed-in visitor goes from /login | Fixed `/app` vs. back to where they were heading | Back, only for paths inside `/app` | No open redirect (`//other.example` falls back to `/app`). `PublicOnlyRoute` owns it, because signing in flips the session and a form-level redirect raced it (found by a test). |
+| Auth schemas | Duplicate in web vs. share | Moved to `@payscope/shared`, imported as `@payscope/shared/auth` | The client validates with exactly the server's rules, and the subpath keeps the country data in the package root out of the login bundle. |
+| Forms | A form library vs. controlled fields and zod | Controlled fields, the shared schemas, TanStack `useMutation` | Two small forms; no new dependency. Errors show on submit and after leaving a field, focus moves to the first invalid field, and server errors map to one place (`form-errors.ts`): 401 generic, 409 inline on the email, 429 and network messages. |
+| Account type on register | Hidden default vs. visible choice | Radio group, Viewer preselected, helper text for both types and a note that the choice is a demo simplification | Least privilege by default, as on the server. |
+| Logout destination | Home page vs. sign-in page | Sign-in page | `ProtectedRoute` moves a signed-out visitor to `/login`; the first version also navigated home, which never won (found by running the app in a browser), so that dead code was removed and the test now asserts the real destination. |
+
+**Design.** The Phase 1 tokens were extended, not bypassed: `ink` (deep blue-black) and `signal` (amber) accents, a serif display stack (no font download), larger type sizes, and shared classes for fields, alerts, radio cards, links and 44 px buttons. The landing page has a dark hero with an illustrative pay-bands graphic built from HTML and Tailwind classes (so text scales and there are no inline styles), then five sections and a closing call to action.
+
+**Checked, not assumed.**
+- *Contrast (WCAG AA, 4.5:1):* white on ink 17.3, ink-100 on ink 13.6, ink-300 on ink 8.1 and on ink-800 7.0, signal on ink 9.7, ink on signal (buttons) 9.7, neutral-600 on white 7.6, brand-700 links 6.7, white on brand-600 5.2, error red on white 4.8, placeholder 4.8. All pass.
+- *Responsive:* headless Chrome at 360, 768 and 1280 px on `/`, `/login`, `/register`, `/app` (both roles), `/403` and a 404: no horizontal scroll, exactly one `h1` per page, and every link, button and field at least 44 px tall (two 16 px in-form links were found and fixed).
+- *Against the real API* (built app, Chrome): register defaults to Viewer and lands on `/app`; a reload restores the session; signed-in visitors are bounced from `/login`; logout clears the token; `/app/employees` redirects a signed-out visitor; a wrong password shows the generic message; an HR login returns to `/app/employees`; a duplicate email shows the inline error; the 11th auth request shows the rate-limit message; an invalid stored token ends the session with a notice.
+
+**Known limits.** The visual check is a viewport and geometry check plus my reading of the screenshots, not a full assistive-technology test; a Content-Security-Policy is deployment work; there is no "remember me" or refresh token, so a session ends after an hour.
+
 ## Role-aware auth and data (change request C)
 
 | Decision | Options considered | Choice | Reason |

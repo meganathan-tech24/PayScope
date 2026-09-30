@@ -20,7 +20,7 @@ Tick each box as the work lands. The commit history mirrors this list.
 
 ### Product features
 
-- [x] Registration (optional role, default `VIEWER`) and a single login for every role that returns the role, with JWT (API; UI in Phase 7)
+- [x] Registration (optional role, default `VIEWER`) and a single login for every role that returns the role, with JWT (API and web UI)
 - [x] Employee management: create, view, edit, delete (API; UI in Phase 8)
 - [x] Server-side search, filter (country, department, job title), sort, and pagination
 - [x] CSV export (respects current filters) (API; download button in Phase 8)
@@ -56,8 +56,8 @@ Tick each box as the work lands. The commit history mirrors this list.
 ### Frontend engineering
 
 - [ ] Feature-based architecture (auth, employees, insights)
-- [ ] Tailwind design system defined in `tailwind.config.js` plus a global stylesheet
-- [ ] Protected routes, auth interceptor, auto-logout on 401
+- [x] Tailwind design system defined in `tailwind.config.js` plus a global stylesheet
+- [x] Protected routes, auth interceptor, auto-logout on 401
 - [ ] Loading, empty, and error states; keyboard-accessible forms
 
 ### Quality
@@ -205,7 +205,7 @@ One sign-in page serves every role (email and password only); the API returns th
 
 Registration accepts an optional `role` (`HR_MANAGER` or `VIEWER`); omitting it gives a `VIEWER`. Anything else is a 400.
 
-Planned routes (Phases 7 and 8): `/` landing, `/login`, `/register`, `/app` (dashboard), `/app/employees`, with 404 and 403 pages.
+Web routes: `/` landing, `/login`, `/register`, `/app` and `/app/employees` (signed in; placeholders until the dashboards and employee table are built), `/403` and a 404 page.
 
 Responses use a consistent envelope with a `requestId` for tracing:
 

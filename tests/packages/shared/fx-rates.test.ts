@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { APPROXIMATE_USD_RATES, isRateCurrency } from '../fx-rates.js';
-import { isIsoCurrencyCode } from '../iso-codes.js';
+import { APPROXIMATE_USD_RATES, isRateCurrency } from '@shared/fx-rates.js';
+import { isIsoCurrencyCode } from '@shared/iso-codes.js';
 
 describe('APPROXIMATE_USD_RATES', () => {
   it('uses 1 for USD and a positive rate for every currency', () => {

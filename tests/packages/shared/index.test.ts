@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { clampPageSize, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '../index.js';
+import { clampPageSize, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '@shared/index.js';
 
 describe('clampPageSize', () => {
   it('falls back to the default for non-positive or non-finite input', () => {

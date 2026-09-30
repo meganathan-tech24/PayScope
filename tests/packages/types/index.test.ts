@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isApiError, isApiSuccess, type ApiEnvelope } from '../index.js';
+import { isApiError, isApiSuccess, type ApiEnvelope } from '@shared-types/index.js';
 
 describe('api envelope type guards', () => {
   it('narrows a success envelope', () => {

@@ -26,7 +26,7 @@ export function validate(schemas: ValidationSchemas) {
         });
       }
       if (schemas.params) {
-        req.params = schemas.params.parse(req.params);
+        req.params = schemas.params.parse(req.params) as Request['params'];
       }
       next();
     } catch (error) {

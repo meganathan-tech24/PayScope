@@ -35,7 +35,7 @@ export const employeeBodySchema = z
       .max(MAX_SALARY_MINOR_UNITS, 'Salary is unrealistically large'),
     employmentType: z.enum(['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERN']),
     hireDate: z.coerce
-      .date({ invalid_type_error: 'Invalid hireDate' })
+      .date({ error: 'Invalid hireDate' })
       .refine((date) => date.getTime() <= Date.now(), 'hireDate cannot be in the future'),
   })
   .strict();

@@ -22,7 +22,6 @@ describe('classifyError', () => {
       {
         code: 'invalid_type',
         expected: 'string',
-        received: 'undefined',
         path: ['email'],
         message: 'Required',
       },

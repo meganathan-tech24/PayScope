@@ -5,8 +5,10 @@ import { CurrencyControls } from '../features/insights/components/CurrencyContro
 import { HeadcountSection } from '../features/insights/components/HeadcountSection';
 import { ApproximateNote } from '../features/insights/components/InsightNotes';
 import { PayByGroupSection } from '../features/insights/components/PayByGroupSection';
+import { SalaryBandsSection } from '../features/insights/components/SalaryBandsSection';
 import { SectionError, SectionSkeleton } from '../features/insights/components/SectionStates';
 import { SummaryCards } from '../features/insights/components/SummaryCards';
+import { TenureSection } from '../features/insights/components/TenureSection';
 import { useCountryStats, useHeadcount, useOutliers } from '../features/insights/hooks/useInsights';
 import { useInsightsParams } from '../features/insights/hooks/useInsightsParams';
 import { currencyOptions, resolveCurrency } from '../features/insights/lib/currencies';
@@ -88,6 +90,8 @@ export function DashboardPage() {
             usd={params.usd}
             currency={currency}
           />
+          <SalaryBandsSection usd={params.usd} currency={currency} />
+          <TenureSection usd={params.usd} currency={currency} />
           <HeadcountSection
             by={params.headcountBy}
             onBy={(headcountBy) => update({ headcountBy })}

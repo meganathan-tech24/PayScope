@@ -34,3 +34,15 @@ export function axisStart(lowestP25: number): number {
   const step = 10 ** (Math.floor(Math.log10(target)) - 1);
   return Math.floor(target / step) * step;
 }
+
+const TENURE_LABEL: Record<string, string> = {
+  '<1y': 'Under 1 year',
+  '1-3y': '1 to 3 years',
+  '3-5y': '3 to 5 years',
+  '5-10y': '5 to 10 years',
+  '10y+': '10 years or more',
+};
+
+export function tenureLabel(band: string): string {
+  return TENURE_LABEL[band] ?? band;
+}

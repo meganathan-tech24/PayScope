@@ -152,7 +152,10 @@ describe('dashboard by role', () => {
 
   it('says how many groups were hidden from a viewer, with singular and plural', async () => {
     start('VIEWER', { hiddenGroups: 3 });
-    expect(await screen.findByText('3 groups hidden: fewer than 5 employees')).toBeInTheDocument();
+    // Each section that hides groups says so (pay by group and tenure here).
+    expect(
+      (await screen.findAllByText('3 groups hidden: fewer than 5 employees')).length,
+    ).toBeGreaterThan(0);
   });
 
   it('uses the singular for one hidden group and shows nothing for none', async () => {
@@ -160,7 +163,9 @@ describe('dashboard by role', () => {
       start('VIEWER', { hiddenGroups: 1 });
       return { unmount: () => undefined };
     })();
-    expect(await screen.findByText('1 group hidden: fewer than 5 employees')).toBeInTheDocument();
+    expect(
+      (await screen.findAllByText('1 group hidden: fewer than 5 employees')).length,
+    ).toBeGreaterThan(0);
     unmount();
   });
 

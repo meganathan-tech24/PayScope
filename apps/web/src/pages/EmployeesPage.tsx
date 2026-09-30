@@ -116,8 +116,9 @@ export function EmployeesPage() {
         onChange={update}
         onClear={clearFilters}
         hasFilters={hasFilters}
-      />
-      <SortControls fields={sortFieldsFor(user.role)} params={params} onChange={update} />
+      >
+        <SortControls fields={sortFieldsFor(user.role)} params={params} onChange={update} />
+      </EmployeeFilters>
 
       {list.isPending ? (
         <EmployeeListSkeleton />

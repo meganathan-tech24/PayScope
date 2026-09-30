@@ -14,7 +14,7 @@ export function SortControls({
   onChange: (patch: Partial<EmployeeListParams>) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-4 md:hidden">
+    <div className="grid grid-cols-2 gap-4">
       <SelectField
         label="Sort by"
         value={params.sortBy}

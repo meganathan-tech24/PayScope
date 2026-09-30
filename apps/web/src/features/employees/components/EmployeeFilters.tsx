@@ -1,3 +1,5 @@
+import { useId, useState, type ReactNode } from 'react';
+
 import { Button } from '../../../components/ui/Button';
 import { SelectField } from '../../../components/ui/SelectField';
 import { TextField } from '../../../components/ui/TextField';
@@ -10,9 +12,21 @@ interface EmployeeFiltersProps {
   onChange: (patch: Partial<EmployeeListParams>, options?: { replace?: boolean }) => void;
   onClear: () => void;
   hasFilters: boolean;
+  /** Extra controls that share the collapsible panel on small screens (the sort choice). */
+  children?: ReactNode;
 }
 
-export function EmployeeFilters({ params, onChange, onClear, hasFilters }: EmployeeFiltersProps) {
+export function EmployeeFilters({
+  params,
+  onChange,
+  onClear,
+  hasFilters,
+  children,
+}: EmployeeFiltersProps) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  // The search box is always visible; the count is for the filters folded into the panel.
+  const active = [params.country, params.department, params.jobTitle].filter(Boolean).length;
   const countries = useFilterOptions('country');
   const departments = useFilterOptions('department');
   const jobTitles = useFilterOptions('jobTitle');
@@ -22,60 +36,89 @@ export function EmployeeFilters({ params, onChange, onClear, hasFilters }: Emplo
       role="search"
       aria-label="Filter employees"
       onSubmit={(event) => event.preventDefault()}
-      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      className="flex flex-col gap-4"
     >
-      <div className="sm:col-span-2 lg:col-span-4">
-        <TextField
-          label="Search by name or email"
-          type="search"
-          name="search"
-          autoComplete="off"
-          value={params.search}
-          // Each keystroke updates the URL (replacing, so Back is not flooded); the request
-          // itself waits until typing pauses.
-          onChange={(event) => onChange({ search: event.target.value }, { replace: true })}
-        />
-      </div>
-      <SelectField
-        label="Country"
-        value={params.country}
-        onChange={(event) => onChange({ country: event.target.value })}
-      >
-        <option value="">All countries</option>
-        {(countries.data ?? []).map((code) => (
-          <option key={code} value={code}>
-            {countryName(code)}
-          </option>
-        ))}
-      </SelectField>
-      <SelectField
-        label="Department"
-        value={params.department}
-        onChange={(event) => onChange({ department: event.target.value })}
-      >
-        <option value="">All departments</option>
-        {(departments.data ?? []).map((name) => (
-          <option key={name} value={name}>
-            {name}
-          </option>
-        ))}
-      </SelectField>
-      <SelectField
-        label="Job title"
-        value={params.jobTitle}
-        onChange={(event) => onChange({ jobTitle: event.target.value })}
-      >
-        <option value="">All job titles</option>
-        {(jobTitles.data ?? []).map((name) => (
-          <option key={name} value={name}>
-            {name}
-          </option>
-        ))}
-      </SelectField>
-      <div className="flex items-end">
-        <Button type="button" variant="secondary" onClick={onClear} disabled={!hasFilters}>
-          Clear filters
+      <TextField
+        label="Search by name or email"
+        type="search"
+        name="search"
+        autoComplete="off"
+        value={params.search}
+        // Each keystroke updates the URL (replacing, so Back is not flooded); the request
+        // itself waits until typing pauses.
+        onChange={(event) => onChange({ search: event.target.value }, { replace: true })}
+      />
+
+      {/* Below md the rest of the filters fold into a panel; from md up they are always shown. */}
+      <div className="md:hidden">
+        <Button
+          type="button"
+          variant="secondary"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((value) => !value)}
+        >
+          Filters and sort
+          {active > 0 ? (
+            <>
+              <span className="badge-brand" aria-hidden="true">
+                {active}
+              </span>
+              <span className="sr-only">, {active} active</span>
+            </>
+          ) : null}
         </Button>
+      </div>
+
+      <div
+        id={panelId}
+        className={[
+          'gap-4 md:grid md:grid-cols-4',
+          open ? 'grid grid-cols-1 sm:grid-cols-2' : 'hidden',
+        ].join(' ')}
+      >
+        <SelectField
+          label="Country"
+          value={params.country}
+          onChange={(event) => onChange({ country: event.target.value })}
+        >
+          <option value="">All countries</option>
+          {(countries.data ?? []).map((code) => (
+            <option key={code} value={code}>
+              {countryName(code)}
+            </option>
+          ))}
+        </SelectField>
+        <SelectField
+          label="Department"
+          value={params.department}
+          onChange={(event) => onChange({ department: event.target.value })}
+        >
+          <option value="">All departments</option>
+          {(departments.data ?? []).map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </SelectField>
+        <SelectField
+          label="Job title"
+          value={params.jobTitle}
+          onChange={(event) => onChange({ jobTitle: event.target.value })}
+        >
+          <option value="">All job titles</option>
+          {(jobTitles.data ?? []).map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </SelectField>
+        <div className="flex items-end">
+          <Button type="button" variant="secondary" onClick={onClear} disabled={!hasFilters}>
+            Clear filters
+          </Button>
+        </div>
+        {children ? <div className="sm:col-span-2 md:hidden">{children}</div> : null}
       </div>
     </form>
   );

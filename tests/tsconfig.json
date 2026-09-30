@@ -2,6 +2,7 @@
   "extends": "@payscope/typescript-config/react-library.json",
   "compilerOptions": {
     "noEmit": true,
+    "rootDir": "..",
     "declaration": false,
     "sourceMap": false,
     "types": ["node", "vite/client", "vitest/globals", "@testing-library/jest-dom"],

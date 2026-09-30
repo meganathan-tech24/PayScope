@@ -1,3 +1,4 @@
+import { fixedBandEdges } from '@payscope/shared';
 import type {
   HeadcountRow,
   InsightMeta,
@@ -14,7 +15,7 @@ import type {
 import { ForbiddenError } from '../../lib/errors/app-error.js';
 
 import { canSeeGroup, limitGroupsForRole } from './insights.access.js';
-import { buildBuckets } from './insights.bands.js';
+import { buildBuckets, buildFixedBuckets } from './insights.bands.js';
 import * as repository from './insights.repository.js';
 import type {
   HeadcountQuery,
@@ -75,12 +76,35 @@ export async function getSalaryBands(query: SalaryBandsQuery, role: Role): Promi
     return { ...meta, currency, headcount: 0, buckets: [], suppressed: headcount > 0 };
   }
 
-  const counts = await repository.getBucketCounts(filters, source, min, max, buckets);
+  if (role === 'HR_MANAGER') {
+    const counts = await repository.getBucketCounts(filters, source, min, max, buckets);
+    return {
+      ...meta,
+      currency,
+      headcount,
+      buckets: buildBuckets(min, max, buckets, counts),
+      suppressed: false,
+    };
+  }
+
+  // A VIEWER's bands sit on fixed, rounded edges (multiples of a per-currency width). The
+  // group's real minimum and maximum only decide how far the edges must reach; they are
+  // never returned, and neither is any edge derived from them.
+  const fixed = fixedBandEdges(min, max, currency, buckets);
+  const upper = fixed.lo + fixed.count * fixed.width;
+  const counts = await repository.getBucketCounts(
+    filters,
+    source,
+    fixed.lo,
+    upper - 1,
+    fixed.count,
+  );
   return {
     ...meta,
     currency,
     headcount,
-    buckets: buildBuckets(min, max, buckets, counts),
+    buckets: buildFixedBuckets(fixed, counts),
+    bucketWidth: fixed.width,
     suppressed: false,
   };
 }

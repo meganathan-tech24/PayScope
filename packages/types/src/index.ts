@@ -108,6 +108,11 @@ export interface SalaryBands extends InsightMeta {
   buckets: SalaryBandBucket[];
   /** True when a VIEWER asked about a set too small to show; buckets are then empty. */
   suppressed: boolean;
+  /**
+   * VIEWER only: every band edge is a multiple of this (minor units). The edges are fixed,
+   * rounded steps, never the group's real minimum or maximum.
+   */
+  bucketWidth?: number;
 }
 
 export type TenureBandLabel = '<1y' | '1-3y' | '3-5y' | '5-10y' | '10y+';

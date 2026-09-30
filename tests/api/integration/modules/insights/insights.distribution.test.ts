@@ -151,7 +151,10 @@ describe('GET /insights/salary-bands (integration)', () => {
     const small = await get('/salary-bands', { currency: 'EUR' }, viewerAuth);
     const smallForHr = await get('/salary-bands', { currency: 'EUR' }, hrAuth);
 
-    expect(large.body.data.buckets).toHaveLength(10);
+    // A viewer's bands sit on fixed rounded edges (20,000 pounds wide), so these small
+    // salaries all fall in the first band.
+    expect(large.body.data.buckets).toEqual([{ from: 0, to: 2_000_000, count: 10 }]);
+    expect(large.body.data.bucketWidth).toBe(2_000_000);
     expect(small.body.data).toMatchObject({ headcount: 0, buckets: [], suppressed: true });
     expect(JSON.stringify(small.body.data)).not.toMatch(/100|900|500/);
     expect(smallForHr.body.data.headcount).toBe(3);

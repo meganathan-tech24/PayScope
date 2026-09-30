@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildBuckets } from '@api/modules/insights/insights.bands.js';
+import { buildBuckets, buildFixedBuckets } from '@api/modules/insights/insights.bands.js';
 
 describe('buildBuckets', () => {
   it('builds equal-width buckets with the maximum in the last one', () => {
@@ -30,6 +30,24 @@ describe('buildBuckets', () => {
   it('returns one bucket when every salary is the same', () => {
     expect(buildBuckets(5000, 5000, 10, new Map([[1, 7]]))).toEqual([
       { from: 5000, to: 5000, count: 7 },
+    ]);
+  });
+});
+
+describe('buildFixedBuckets', () => {
+  it('lays contiguous bands on the given width from the first edge, filling empty ones with 0', () => {
+    const buckets = buildFixedBuckets(
+      { lo: 2_000_000, width: 2_000_000, count: 3 },
+      new Map([
+        [1, 4],
+        [3, 2],
+      ]),
+    );
+
+    expect(buckets).toEqual([
+      { from: 2_000_000, to: 4_000_000, count: 4 },
+      { from: 4_000_000, to: 6_000_000, count: 0 },
+      { from: 6_000_000, to: 8_000_000, count: 2 },
     ]);
   });
 });

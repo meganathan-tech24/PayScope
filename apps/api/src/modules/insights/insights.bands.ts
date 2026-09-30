@@ -1,3 +1,4 @@
+import type { FixedBands } from '@payscope/shared';
 import type { SalaryBandBucket } from '@payscope/types';
 
 // Splits [min, max] into `count` equal-width buckets, [from, to) each and the last
@@ -20,6 +21,19 @@ export function buildBuckets(
   return Array.from({ length: count }, (_, index) => ({
     from: Math.ceil(min + index * width),
     to: index === count - 1 ? max : Math.ceil(min + (index + 1) * width),
+    count: bucketCounts.get(index + 1) ?? 0,
+  }));
+}
+
+// Bands on fixed edges (multiples of one width): what a VIEWER gets, so that no edge is a
+// real person's salary. `bucketCounts` maps a 1-based width_bucket index to headcount.
+export function buildFixedBuckets(
+  { lo, width, count }: FixedBands,
+  bucketCounts: Map<number, number>,
+): SalaryBandBucket[] {
+  return Array.from({ length: count }, (_, index) => ({
+    from: lo + index * width,
+    to: lo + (index + 1) * width,
     count: bucketCounts.get(index + 1) ?? 0,
   }));
 }

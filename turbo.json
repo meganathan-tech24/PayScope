@@ -37,6 +37,15 @@
         "$TURBO_ROOT$/packages/*/src/**",
         "$TURBO_ROOT$/apps/api/prisma/**"
       ]
+    },
+    "@payscope/api#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/packages/*/src/**",
+        "$TURBO_ROOT$/packages/*/package.json"
+      ]
     }
   }
 }

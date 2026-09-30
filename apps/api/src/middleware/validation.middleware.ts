@@ -16,7 +16,14 @@ export function validate(schemas: ValidationSchemas) {
         req.body = schemas.body.parse(req.body);
       }
       if (schemas.query) {
-        req.query = schemas.query.parse(req.query);
+        // Express 5 makes req.query a read-only getter, so plain assignment is
+        // ignored; shadow it with an own property holding the parsed values.
+        Object.defineProperty(req, 'query', {
+          value: schemas.query.parse(req.query),
+          writable: true,
+          configurable: true,
+          enumerable: true,
+        });
       }
       if (schemas.params) {
         req.params = schemas.params.parse(req.params);

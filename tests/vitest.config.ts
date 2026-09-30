@@ -17,8 +17,6 @@ const alias = {
 
 export default defineConfig({
   test: {
-    // Empty projects are legitimate while tests are being moved in and before e2e exists.
-    passWithNoTests: true,
     projects: [
       {
         resolve: { alias },

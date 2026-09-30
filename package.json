@@ -11,7 +11,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
-    "lint": "turbo run lint",
+    "lint": "turbo run lint && node scripts/check-test-locations.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "turbo run test",

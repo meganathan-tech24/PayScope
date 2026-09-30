@@ -160,6 +160,7 @@ pnpm dev                        # web on :5173, api on :4000
 | `pnpm test`            | Unit tests (api, web, packages)       |
 | `pnpm test:integration`| API integration tests (needs Postgres)|
 | `pnpm test:e2e`        | Playwright E2E tests (none yet, Phase 9) |
+| `pnpm smoke:production`| Run the built API like a host does: fails fast without configuration, answers `/api/v1/health`, stops cleanly on SIGTERM (needs `pnpm build` and `TEST_DATABASE_URL`) |
 | `pnpm db:migrate`      | Apply Prisma migrations               |
 | `pnpm db:generate`     | Regenerate the Prisma client          |
 | `pnpm db:seed`         | Replace all employees with 10,000 seeded ones and upsert the two demo users (deterministic, re-runnable; refuses in production unless `ALLOW_PRODUCTION_SEED=true`) |
@@ -215,6 +216,20 @@ Responses use a consistent envelope with a `requestId` for tracing:
 
 ---
 
+## Deploying the API (Render)
+
+The API builds to one file (`apps/api/dist/server.js`, bundled with esbuild) that plain Node runs. Root Directory empty; environment variables `NODE_VERSION=24`, `NODE_ENV=production`, `DATABASE_URL`, `JWT_SECRET` (32+ characters), `CORS_ORIGIN` (the web app's URL); Render sets `PORT`.
+
+| Setting | Value |
+| ------- | ----- |
+| Build Command | `corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm --filter @payscope/api build` |
+| Start Command | `cd apps/api && ./node_modules/.bin/prisma migrate deploy && node dist/server.js` |
+| Health Check Path | `/api/v1/health` |
+
+Production reads no `.env` file and exits with a clear message if a variable is missing. Details and the reasoning: [`docs/design-notes.md`](docs/design-notes.md).
+
+---
+
 ## Key decisions and trade-offs
 
 - **Currency:** salaries are stored in local currency as integer minor units and never silently mixed. Insights are per currency by default.
@@ -247,7 +262,6 @@ Built with an agentic AI coding tool guided by [`PROJECT_SPEC.md`](PROJECT_SPEC.
 ## Known limitations
 
 - Anyone can register as `HR_MANAGER` or `VIEWER` (default `VIEWER`). This is an assessment-only simplification; production would use HR-Manager invites for Viewers or admin approval for HR accounts (see `docs/design-notes.md`)
-- `node dist/server.js` after `pnpm build` does not start yet (`@payscope/shared` is consumed as TypeScript source); recorded in `docs/design-notes.md`. Change request E plans a production-start smoke check for CI
 - No password reset, email verification, or refresh-token rotation
 - USD normalization uses a static rate table and is approximate
 - Single-tenant only

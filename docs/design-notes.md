@@ -74,7 +74,7 @@ Verified with `pnpm view` and `pnpm outdated -r`, not assumed. Test counts befor
 
 `pnpm outdated -r` now lists only the deliberate holds: `eslint`, `@eslint/js`, `tailwindcss`, `typescript`, `@types/node` (26, we stay on 24 types) and Prisma's release-candidate tag.
 
-**Found during the upgrade, not caused by it (open):** `pnpm build` followed by `node dist/server.js` does not start. `@payscope/shared` is consumed as TypeScript source (`"main": "./src/index.ts"`), and its imports use `.js` specifiers (`./fx-rates.js`) that only resolve when a tool like `tsx` or Vitest maps them to the `.ts` files; plain Node fails with `ERR_MODULE_NOT_FOUND`. It has been broken since Phase 4 first imported runtime code from `shared`; `tsx` (dev), Vitest and the integration tests all transpile it and hide the problem. Fix before Phase 10 (deployment): either build `shared`/`types` to `dist` and point `main`/`exports` there, or bundle the API for production.
+**Found during the upgrade, not caused by it (fixed in change request E, see "Production start" below):** `pnpm build` followed by `node dist/server.js` does not start. `@payscope/shared` is consumed as TypeScript source (`"main": "./src/index.ts"`), and its imports use `.js` specifiers (`./fx-rates.js`) that only resolve when a tool like `tsx` or Vitest maps them to the `.ts` files; plain Node fails with `ERR_MODULE_NOT_FOUND`. It has been broken since Phase 4 first imported runtime code from `shared`; `tsx` (dev), Vitest and the integration tests all transpile it and hide the problem. Fix before Phase 10 (deployment): either build `shared`/`types` to `dist` and point `main`/`exports` there, or bundle the API for production.
 
 ## Test consolidation (change request B)
 
@@ -94,6 +94,29 @@ All tests live in the root `tests/` workspace package (`@payscope/tests`), mirro
 **Which database the integration suite uses (fix after change request B).** The global setup used to force the `.env.test` template (`localhost:5432`) over everything, so on a machine where port 5432 is another PostgreSQL (or the project's container is mapped elsewhere) `pnpm test:integration` failed with `P1000` authentication errors even though `.env` was correct. Now the database is taken from the real environment (CI), then this machine's `.env` (`TEST_DATABASE_URL`), then the `.env.test` template; `DATABASE_URL` is set to that same URL, and the run is refused unless the database name ends in `_test`, because every table is truncated after each test. All other `.env.test` values (NODE_ENV, secrets, silent logs) still win.
 
 Verification: Vitest JSON reporter snapshots of every test's file and full name before the move and after it match exactly: 188 unit (API 178, web 2, shared 6, types 2) and 76 integration tests.
+
+## Production start (change request E)
+
+**The defect.** `pnpm build` ran `tsc`, which emitted `dist/` but left `@payscope/shared` and `@payscope/types` as imports of their TypeScript source (`"main": "./src/index.ts"`, `.js` specifiers Node cannot map to `.ts`). On Render, `node apps/api/dist/server.js` died with `ERR_MODULE_NOT_FOUND` for `packages/shared/src/roles.js`. `tsx`, Vitest and the integration tests all transpile the source, so nothing caught it.
+
+| Decision | Options considered | Choice | Reason |
+| -------- | ------------------ | ------ | ------ |
+| Fix | Compile `shared` and `types` to JS with `exports` maps (two more build steps and ordering) vs. run `tsx` in production vs. bundle | Bundle the API with esbuild (`apps/api/scripts/build.mjs`): one ES module for Node 24, workspace packages and the generated Prisma client inlined | The smallest change: no new build graph, no dev tool in production, and dev, typecheck and tests are untouched. `tsup` is only a wrapper around esbuild, so the script uses esbuild directly. |
+| What stays external | Everything inlined vs. dependencies external | Every real dependency of `apps/api` is external (`express`, `zod`, `pino`, `@prisma/client` and its `runtime/*` subpaths, `@prisma/adapter-pg`, ...) | They resolve from `apps/api/node_modules` at runtime, so Prisma's runtime, the wasm query compiler (a base64 module, no engine file to copy) and `pg` are used exactly as shipped. `i18n-iso-countries`, which only `shared` uses, is inlined. |
+| Build script | `tsc` vs. generate then bundle | `prisma generate && node scripts/build.mjs`, deleting any stale `dist/` first | The generated client (git-ignored) must exist before bundling. Turbo hashes `packages/*/src` for `@payscope/api#build`, because inlined code lives outside the package. |
+| Repository root | Count `..` from the file vs. search | `loadEnvFile` walks up to `pnpm-workspace.yaml` | The old `../../../..` was right under `src/lib` and wrong inside `dist/`, where it would have looked above the repository. |
+| `.env` in production | Read it if present vs. never | Never: with `NODE_ENV=production` no env file is read | Secrets come from the environment only, and it makes the missing-variable check mean something on a machine that has a `.env`. |
+| Shutdown | Default SIGTERM behaviour vs. graceful | Stop accepting, finish running requests, disconnect Prisma, exit 0; exit 1 after 10 s | Render sends SIGTERM on every deploy, and the smoke check asserts the exit code. |
+| Fail fast | New check vs. existing | The existing zod config check exits 1 with `Invalid environment configuration:` and one line per bad variable | Proven against the production bundle by the smoke check. |
+
+**Smoke check** (`scripts/smoke-production.mjs`, `pnpm smoke:production`): runs the built bundle the way a host does (real environment only, from another working directory) and asserts that (1) with no configuration it exits non-zero naming `DATABASE_URL`, `JWT_SECRET` and `CORS_ORIGIN`; (2) with configuration it answers `GET /api/v1/health` with 200 and the database up (polled every 250 ms for up to 30 s); (3) SIGTERM stops it with exit code 0. Every wait has a timeout, a 90 s watchdog and an exit hook kill the child, and the database name must be a plain name ending in `_test`. It runs in CI after Build and inside `pnpm test:integration` (which always rebuilds first, so a stale `dist` cannot pass). Checked by hand: it also fails, and leaves no process behind, for a non-test database and for an unreachable one.
+
+**Render** (Root Directory empty; verified on a clean clone with `NODE_ENV=production` and no `.env`): environment variables `NODE_VERSION=24`, `NODE_ENV=production`, `DATABASE_URL` (a Neon URL needs `?sslmode=require`), `JWT_SECRET` (32 or more characters) and `CORS_ORIGIN` (the web app's URL); Render sets `PORT`.
+- Build Command: `corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm --filter @payscope/api build`
+- Start Command: `cd apps/api && ./node_modules/.bin/prisma migrate deploy && node dist/server.js`
+- Health Check Path: `/api/v1/health` (200 when the database answers, 503 when it does not)
+
+`--prod=false` keeps the build tools (`prisma`, `esbuild`) installed even if a host omits dev dependencies under `NODE_ENV=production`; on pnpm 12.8.1 a plain install also worked in the clean-clone test, so it is a safeguard, not a workaround. The start command calls the `prisma` binary directly so it needs no pnpm at runtime, and it migrates before the server starts.
 
 ## Insights UI (Phase 8b)
 

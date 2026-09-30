@@ -621,7 +621,7 @@ Employee table/cards, filters, form modal (HR Manager), read-only directory layo
 Playwright critical-flow test (both roles, desktop and mobile viewports), full CI pipeline, OpenAPI docs, README, `architecture.md` (Mermaid), `demo-script.md`.
 
 **Phase 10: Deployment and readiness**
-Dockerfiles for both apps, deploy the API + managed PostgreSQL + web (suggest the simplest reliable option, e.g. Render, Railway, Fly.io or AWS), run migrations on deploy, a **production-start smoke check** (see section 13), seed production with 10,000 employees, put the live URL in the README. Prepare the demo video script.
+Dockerfiles for both apps, deploy the API + managed PostgreSQL + web (suggest the simplest reliable option, e.g. Render, Railway, Fly.io or AWS), run migrations on deploy, the **production-start smoke check** (section 13, done), seed production with 10,000 employees, put the live URL in the README. Prepare the demo video script.
 
 ---
 
@@ -635,7 +635,7 @@ Install (pnpm, cached) -> Type check -> ESLint + test-location guard (pnpm lint)
 
 The test-location guard (`scripts/check-test-locations.mjs`) runs inside `pnpm lint`, so the Lint step fails if a test file appears outside `tests/`. The pipeline fails if any mandatory gate fails. Only green code is eligible for merge and deploy. Use Turborepo caching where it helps (the `@payscope/tests` tasks also hash the source they cover, so a cached result can never go stale).
 
-**Planned (change request E): production-start smoke check.** After Build, start the compiled API the way production does and call `/health`. This is needed because `pnpm build` followed by `node dist/server.js` does not start today (`@payscope/shared` is consumed as TypeScript source); the defect is recorded in `docs/design-notes.md`, and no gate catches it yet. Not implemented at the time of writing.
+**Production-start smoke check (change request E, done).** After Build, `pnpm smoke:production` (`scripts/smoke-production.mjs`) runs the bundled API the way a host does: with no configuration it must exit non-zero naming the missing variables; with configuration it must answer `/api/v1/health` with 200 and the database up; SIGTERM must stop it with exit code 0. The API is bundled with esbuild into `apps/api/dist/server.js` (workspace packages inlined, dependencies external) so plain `node` can run it; the check also runs inside `pnpm test:integration`. See `docs/design-notes.md`.
 
 ---
 

@@ -458,7 +458,7 @@ Field-level filtering happens **in the service layer**, through one serializer, 
 
 - `stats?groupBy=country|jobTitle|department[&view=usd]`: min / p25 / median / avg / p75 / max and headcount by group, always **per currency** (native view), using Postgres `percentile_cont` through parameterized `$queryRaw`. `groupBy=org` (one org-wide row) is only allowed with `view=usd`.
 - `headcount?by=country|department|jobTitle|employmentType`: headcount distribution (no salary data)
-- `salary-bands?currency=XXX&buckets=10` (or `view=usd`): equal-width salary histogram
+- `salary-bands?currency=XXX&buckets=10` (or `view=usd`): salary histogram. HR gets equal-width bands between the exact minimum and maximum; a `VIEWER` gets bands on fixed, rounded edges (multiples of a per-currency width, returned as `bucketWidth`), never the group's real minimum or maximum
 - `tenure`: headcount, median and average pay by tenure band (`<1y`, `1-3y`, `3-5y`, `5-10y`, `10y+`)
 - `outliers?limit=50`: employees outside the Tukey fences of their like-for-like group (same country, currency, job title and employment type; groups of at least 8, smaller groups are never flagged); **`HR_MANAGER` only**, 403 for `VIEWER`
 - `view=usd`: optional org-wide normalization from a static, documented rate table; results are US cents, labelled `approximate`, and report employees with no rate instead of dropping them

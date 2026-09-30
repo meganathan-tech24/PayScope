@@ -186,7 +186,7 @@ Base path `/api/v1`. All routes except register and login require `Authorization
 | GET    | `/employees/export.csv` | CSV export of the filtered set (no salary column for a `VIEWER`) |
 | GET    | `/insights/stats`       | Min, p25, median, avg, p75, max by `groupBy=country\|jobTitle\|department` (or `org` with `view=usd`), per currency |
 | GET    | `/insights/headcount`   | Headcount by country, department, job title or employment type |
-| GET    | `/insights/salary-bands`| Salary histogram for one `currency` (or `view=usd`) |
+| GET    | `/insights/salary-bands`| Salary histogram for one `currency` (or `view=usd`); a `VIEWER`'s bands use fixed rounded edges, never the real minimum or maximum |
 | GET    | `/insights/tenure`      | Headcount, median and average pay by tenure band |
 | GET    | `/insights/outliers`    | Employees outside their group's pay range (HR_MANAGER only, 403 for VIEWER) |
 

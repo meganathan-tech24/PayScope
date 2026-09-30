@@ -146,3 +146,11 @@ Key prompts and instructions given to the AI coding tool, and the decisions that
 - **What I changed or rejected, and why:** Approved as proposed. Verified rather than assumed: the bundle was started by hand (clear error, healthy, exit 0 on SIGTERM), the smoke script was made to fail on purpose (non-test database, unreachable database) and left no process behind, and the exact Render commands were run on a clean clone with `NODE_ENV=production` and no `.env`. That run showed a plain `pnpm install` also keeps the dev tools on pnpm 12.8.1, so `--prod=false` is documented as a safeguard, not a requirement.
 - **Outcome:** Five commits. Typecheck, lint, format, unit and integration tests pass; unit 504 to 517, integration 173 to 174.
 
+---
+
+## Viewer salary bands
+- **Prompt / instruction:** A Viewer's band range is built from a group's exact minimum and maximum, which reveals individual salaries. Build Viewer band boundaries from fixed, rounded bucket edges (a sensible step per currency), never from the group's real min or max; keep the under-5 suppression; test with a strict schema parse and a raw-text check that no exact test salary appears, and that HR bands are unchanged; update design-notes.
+- **What the AI proposed:** A per-currency band width (about 25,000 US dollars converted with the static rates, rounded to a 1, 2, 2.5, 5 ladder), edges at multiples of it, widening along the ladder to respect the requested number of bands, `bucketWidth` in the response, and a note in the UI.
+- **What I changed or rejected, and why:** Approved as proposed. The plan said EUR would be 20,000; computing it gave 25,000 (23,000 is nearer 25,000 on the ladder), so the tests and notes use the computed values. Checked on the real seed rather than only the fixtures. Residual risk (the range is known to within one step, and bands of one to four people are still shown) is written down rather than hidden.
+- **Outcome:** Four commits (shared widths, API, web note, docs). Typecheck, lint, format, unit and integration tests pass; unit 517 to 532, integration 174 to 182.
+

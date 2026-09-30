@@ -3,7 +3,8 @@ import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '@api/app/app.js';
-import { signToken } from '@api/lib/jwt.js';
+import { buildEmployeeInput } from '@tests/factories/employee.js';
+import { hrAuth as hr, viewerAuth as viewer } from '@tests/helpers/tokens.js';
 
 // Fresh app per test so the in-memory rate limiter never accumulates across tests.
 let app: Express;
@@ -14,29 +15,8 @@ beforeEach(() => {
 const API = '/api/v1/employees';
 const MISSING_ID = '00000000-0000-4000-8000-000000000000';
 
-// authenticate trusts the signed payload (no DB read), so tokens can be
-// hand-signed. Registration only ever creates HR_MANAGER, so this is also the
-// only way to get a VIEWER.
-const hr = `Bearer ${signToken({ sub: 'hr-user', role: 'HR_MANAGER' })}`;
-const viewer = `Bearer ${signToken({ sub: 'viewer-user', role: 'VIEWER' })}`;
-
-function payload(overrides: Record<string, unknown> = {}) {
-  return {
-    fullName: 'Ada Lovelace',
-    email: 'ada@example.com',
-    jobTitle: 'Engineer',
-    department: 'Engineering',
-    country: 'GB',
-    currency: 'GBP',
-    salary: 9_000_000,
-    employmentType: 'FULL_TIME',
-    hireDate: '2020-01-15',
-    ...overrides,
-  };
-}
-
 const create = (overrides: Record<string, unknown> = {}) =>
-  request(app).post(API).set('Authorization', hr).send(payload(overrides));
+  request(app).post(API).set('Authorization', hr).send(buildEmployeeInput(overrides));
 
 const list = (query: Record<string, unknown> = {}, auth = hr) =>
   request(app).get(API).set('Authorization', auth).query(query);
@@ -69,7 +49,7 @@ describe('employees CRUD (integration)', () => {
     const updated = await request(app)
       .put(`${API}/${id}`)
       .set('Authorization', hr)
-      .send(payload({ jobTitle: 'Principal Engineer', salary: 12_000_000 }));
+      .send(buildEmployeeInput({ jobTitle: 'Principal Engineer', salary: 12_000_000 }));
     expect(updated.status).toBe(200);
     expect(updated.body.data).toMatchObject({ jobTitle: 'Principal Engineer', salary: 12_000_000 });
 
@@ -95,8 +75,8 @@ describe('employees authentication and authorization (integration)', () => {
   it.each([
     ['GET list', () => request(app).get(API)],
     ['GET by id', () => request(app).get(`${API}/${MISSING_ID}`)],
-    ['POST', () => request(app).post(API).send(payload())],
-    ['PUT', () => request(app).put(`${API}/${MISSING_ID}`).send(payload())],
+    ['POST', () => request(app).post(API).send(buildEmployeeInput())],
+    ['PUT', () => request(app).put(`${API}/${MISSING_ID}`).send(buildEmployeeInput())],
     ['DELETE', () => request(app).delete(`${API}/${MISSING_ID}`)],
   ])('%s without a token is 401', async (_label, send) => {
     const response = await send();
@@ -112,10 +92,14 @@ describe('employees authentication and authorization (integration)', () => {
   });
 
   it.each([
-    ['POST', () => request(app).post(API).set('Authorization', viewer).send(payload())],
+    ['POST', () => request(app).post(API).set('Authorization', viewer).send(buildEmployeeInput())],
     [
       'PUT',
-      () => request(app).put(`${API}/${MISSING_ID}`).set('Authorization', viewer).send(payload()),
+      () =>
+        request(app)
+          .put(`${API}/${MISSING_ID}`)
+          .set('Authorization', viewer)
+          .send(buildEmployeeInput()),
     ],
     ['DELETE', () => request(app).delete(`${API}/${MISSING_ID}`).set('Authorization', viewer)],
   ])('%s as a VIEWER is 403', async (_label, send) => {
@@ -126,7 +110,7 @@ describe('employees authentication and authorization (integration)', () => {
   });
 
   it('does not create anything when a VIEWER attempts a POST', async () => {
-    await request(app).post(API).set('Authorization', viewer).send(payload());
+    await request(app).post(API).set('Authorization', viewer).send(buildEmployeeInput());
 
     expect((await list()).body.meta.total).toBe(0);
   });
@@ -148,7 +132,7 @@ describe('employees validation, conflicts and 404s (integration)', () => {
   });
 
   it('rejects a body with a missing required field', async () => {
-    const { jobTitle: _omit, ...incomplete } = payload();
+    const { jobTitle: _omit, ...incomplete } = buildEmployeeInput();
 
     const response = await request(app).post(API).set('Authorization', hr).send(incomplete);
 
@@ -178,7 +162,7 @@ describe('employees validation, conflicts and 404s (integration)', () => {
     const response = await request(app)
       .put(`${API}/${second.body.data.id as string}`)
       .set('Authorization', hr)
-      .send(payload({ email: 'first@example.com' }));
+      .send(buildEmployeeInput({ email: 'first@example.com' }));
 
     expect(response.status).toBe(409);
     expectErrorEnvelope(response.body, 'EMPLOYEE_EMAIL_TAKEN');
@@ -190,7 +174,7 @@ describe('employees validation, conflicts and 404s (integration)', () => {
     const response = await request(app)
       .put(`${API}/${created.body.data.id as string}`)
       .set('Authorization', hr)
-      .send(payload({ department: 'Research' }));
+      .send(buildEmployeeInput({ department: 'Research' }));
 
     expect(response.status).toBe(200);
   });
@@ -199,7 +183,11 @@ describe('employees validation, conflicts and 404s (integration)', () => {
     ['GET', () => request(app).get(`${API}/${MISSING_ID}`).set('Authorization', hr)],
     [
       'PUT',
-      () => request(app).put(`${API}/${MISSING_ID}`).set('Authorization', hr).send(payload()),
+      () =>
+        request(app)
+          .put(`${API}/${MISSING_ID}`)
+          .set('Authorization', hr)
+          .send(buildEmployeeInput()),
     ],
     ['DELETE', () => request(app).delete(`${API}/${MISSING_ID}`).set('Authorization', hr)],
   ])('%s of an unknown id is 404 with the standard envelope', async (_label, send) => {

@@ -4,15 +4,12 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '@api/app/app.js';
 import { prisma } from '@api/database/prisma.js';
-import { signToken } from '@api/lib/jwt.js';
 import { streamEmployees } from '@api/modules/employees/employees.repository.js';
+import { hrAuth as hr, viewerAuth as viewer } from '@tests/helpers/tokens.js';
 
 const EXPORT = '/api/v1/employees/export.csv';
 const HEADER =
   'id,fullName,email,jobTitle,department,country,currency,salary,employmentType,hireDate';
-
-const hr = `Bearer ${signToken({ sub: 'hr-user', role: 'HR_MANAGER' })}`;
-const viewer = `Bearer ${signToken({ sub: 'viewer-user', role: 'VIEWER' })}`;
 
 let app: Express;
 beforeEach(() => {

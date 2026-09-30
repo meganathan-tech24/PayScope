@@ -9,6 +9,7 @@ const repo = path.resolve(here, '..');
 
 // Tests live here, source lives in apps/* and packages/*. Aliases mirror tsconfig `paths`.
 const alias = {
+  '@tests': here,
   '@api': path.join(repo, 'apps/api/src'),
   '@web': path.join(repo, 'apps/web/src'),
   '@shared': path.join(repo, 'packages/shared/src'),

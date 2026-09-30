@@ -1,9 +1,11 @@
 import { createApp } from './app/app.js';
 import { config } from './app/config/config.js';
+import { prisma } from './database/prisma.js';
 import { logger } from './lib/logging/logger.js';
+import { createShutdown } from './lib/shutdown.js';
 
 // Express 5 passes a startup failure (e.g. port in use) to this callback instead of throwing.
-createApp().listen(config.PORT, (error?: Error) => {
+const server = createApp().listen(config.PORT, (error?: Error) => {
   if (error) {
     logger.fatal('Server failed to start', {
       stack: error.stack,
@@ -13,3 +15,12 @@ createApp().listen(config.PORT, (error?: Error) => {
   }
   logger.info('Server started', { metadata: { port: config.PORT, env: config.NODE_ENV } });
 });
+
+const shutdown = createShutdown({
+  server,
+  disconnect: () => prisma.$disconnect(),
+  exit: (code) => process.exit(code),
+  log: (message, metadata) => logger.info(message, { metadata }),
+});
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

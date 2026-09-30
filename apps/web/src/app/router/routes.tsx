@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router';
 
 import { AppShell } from '../../components/layout/AppShell';
 import { Button } from '../../components/ui/Button';
@@ -19,7 +19,7 @@ function HomePlaceholder() {
 
 export function AppRouter() {
   return (
-    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <BrowserRouter>
       <AppShell>
         <Routes>
           <Route path="/" element={<HomePlaceholder />} />

@@ -4,6 +4,7 @@ import { useAuth } from '../features/auth/hooks/useAuth';
 import { CurrencyControls } from '../features/insights/components/CurrencyControls';
 import { HeadcountSection } from '../features/insights/components/HeadcountSection';
 import { ApproximateNote } from '../features/insights/components/InsightNotes';
+import { OutliersSection } from '../features/insights/components/OutliersSection';
 import { PayByGroupSection } from '../features/insights/components/PayByGroupSection';
 import { SalaryBandsSection } from '../features/insights/components/SalaryBandsSection';
 import { SectionError, SectionSkeleton } from '../features/insights/components/SectionStates';
@@ -92,6 +93,7 @@ export function DashboardPage() {
           />
           <SalaryBandsSection usd={params.usd} currency={currency} />
           <TenureSection usd={params.usd} currency={currency} />
+          {isHr ? <OutliersSection usd={params.usd} currency={currency} /> : null}
           <HeadcountSection
             by={params.headcountBy}
             onBy={(headcountBy) => update({ headcountBy })}

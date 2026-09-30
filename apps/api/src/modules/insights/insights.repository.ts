@@ -1,3 +1,5 @@
+import type { TenureBand } from '@payscope/types';
+
 import { prisma } from '../../database/prisma.js';
 import { Prisma } from '../../generated/prisma/client.js';
 
@@ -120,4 +122,32 @@ export async function getBucketCounts(
     ${whereClause(filters)}
     GROUP BY 1`);
   return new Map(rows.map((row) => [row.bucket, row.count]));
+}
+
+// Tenure in years is the whole-day difference from `asOf` (a YYYY-MM-DD date the
+// service supplies, so tests never depend on the database clock) over 365.25.
+export async function getTenureBands(filters: InsightFilters, asOf: string): Promise<TenureBand[]> {
+  const rows = await prisma.$queryRaw<TenureBand[]>(Prisma.sql`
+    SELECT t."band" AS "band",
+           t."currency" AS "currency",
+           COUNT(*)::int AS "headcount",
+           percentile_cont(0.5) WITHIN GROUP (ORDER BY t."salary") AS "median",
+           AVG(t."salary")::float8 AS "avg"
+    FROM (
+      SELECT e."salary", e."currency", e."hireDate",
+             CASE
+               WHEN (${asOf}::date - e."hireDate") / 365.25 < 1 THEN '<1y'
+               WHEN (${asOf}::date - e."hireDate") / 365.25 < 3 THEN '1-3y'
+               WHEN (${asOf}::date - e."hireDate") / 365.25 < 5 THEN '3-5y'
+               WHEN (${asOf}::date - e."hireDate") / 365.25 < 10 THEN '5-10y'
+               ELSE '10y+'
+             END AS "band"
+      FROM "Employee" e
+      ${whereClause(filters)}
+    ) t
+    GROUP BY t."band", t."currency"
+    ORDER BY t."currency",
+             CASE t."band" WHEN '<1y' THEN 1 WHEN '1-3y' THEN 2 WHEN '3-5y' THEN 3 WHEN '5-10y' THEN 4 ELSE 5 END`);
+
+  return rows.map((row) => ({ ...row, median: Math.round(row.median), avg: Math.round(row.avg) }));
 }

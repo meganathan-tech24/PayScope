@@ -3,7 +3,12 @@ import type { NextFunction, Request, Response } from 'express';
 
 import { roleOf } from '../../lib/request-role.js';
 
-import type { HeadcountQuery, SalaryBandsQuery, StatsQuery } from './insights.schema.js';
+import type {
+  HeadcountQuery,
+  SalaryBandsQuery,
+  StatsQuery,
+  TenureQuery,
+} from './insights.schema.js';
 import * as service from './insights.service.js';
 
 // validate() has already replaced req.query with the parsed values.
@@ -44,6 +49,19 @@ export async function salaryBandsHandler(
       roleOf(req),
     );
     res.status(200).json(envelope(req, bands));
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function tenureHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const tenure = await service.getTenure(req.query as unknown as TenureQuery, roleOf(req));
+    res.status(200).json(envelope(req, tenure));
   } catch (error) {
     next(error);
   }

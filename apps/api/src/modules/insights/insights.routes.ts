@@ -3,11 +3,17 @@ import { Router } from 'express';
 import { authenticate } from '../../middleware/auth.middleware.js';
 import { validate } from '../../middleware/validation.middleware.js';
 
-import { headcountHandler, salaryBandsHandler, statsHandler } from './insights.controller.js';
+import {
+  headcountHandler,
+  salaryBandsHandler,
+  statsHandler,
+  tenureHandler,
+} from './insights.controller.js';
 import {
   headcountQuerySchema,
   salaryBandsQuerySchema,
   statsQuerySchema,
+  tenureQuerySchema,
 } from './insights.schema.js';
 
 export const insightsRouter: Router = Router();
@@ -23,3 +29,4 @@ insightsRouter.get(
   validate({ query: salaryBandsQuerySchema }),
   salaryBandsHandler,
 );
+insightsRouter.get('/tenure', validate({ query: tenureQuerySchema }), tenureHandler);

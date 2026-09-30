@@ -1,11 +1,16 @@
-import type { HeadcountRow, InsightStats, Role, SalaryBands } from '@payscope/types';
+import type { HeadcountRow, InsightStats, Role, SalaryBands, TenureSummary } from '@payscope/types';
 
 import { ValidationError } from '../../lib/errors/app-error.js';
 
 import { canSeeGroup, limitGroupsForRole } from './insights.access.js';
 import { buildBuckets } from './insights.bands.js';
 import * as repository from './insights.repository.js';
-import type { HeadcountQuery, SalaryBandsQuery, StatsQuery } from './insights.schema.js';
+import type {
+  HeadcountQuery,
+  SalaryBandsQuery,
+  StatsQuery,
+  TenureQuery,
+} from './insights.schema.js';
 
 export async function getStats(query: StatsQuery, role: Role): Promise<InsightStats> {
   const { groupBy, view, ...filters } = query;
@@ -46,4 +51,17 @@ export async function getSalaryBands(query: SalaryBandsQuery, role: Role): Promi
     buckets: buildBuckets(min, max, buckets, counts),
     suppressed: false,
   };
+}
+
+export async function getTenure(query: TenureQuery, role: Role): Promise<TenureSummary> {
+  const { view, ...filters } = query;
+  if (view !== 'native') {
+    throw new ValidationError('The USD view is not available yet');
+  }
+
+  const asOf = new Date().toISOString().slice(0, 10);
+  const bands = await repository.getTenureBands(filters, asOf);
+  const { visible, suppressed } = limitGroupsForRole(bands, role);
+
+  return { view: 'native', approximate: false, bands: visible, suppressedGroups: suppressed };
 }

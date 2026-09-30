@@ -253,7 +253,6 @@ Built with an agentic AI coding tool guided by [`PROJECT_SPEC.md`](PROJECT_SPEC.
 - [Design notes and performance](docs/design-notes.md)
 - [Architecture diagrams](docs/architecture.md)
 - [AI prompts log](docs/ai-prompts.md)
-- [Demo script](docs/demo-script.md)
 
 ---
 

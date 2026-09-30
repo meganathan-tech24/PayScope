@@ -1,3 +1,5 @@
+import type { EmployeeDirectory, EmployeeFull, Role } from '@payscope/types';
+
 import { NotFoundError } from '../../lib/errors/app-error.js';
 
 import * as repository from './employees.repository.js';
@@ -6,9 +8,12 @@ import type {
   ExportEmployeesQuery,
   ListEmployeesQuery,
 } from './employees.schema.js';
+import { serializeEmployee } from './employees.serializer.js';
 import type { Employee, EmployeePage } from './employees.types.js';
 
-export async function listEmployees(query: ListEmployeesQuery): Promise<EmployeePage> {
+// Every function that returns an employee takes the caller's role and returns
+// the serialized shape, so a controller never sees (or forgets to filter) a raw row.
+export async function listEmployees(query: ListEmployeesQuery, role: Role): Promise<EmployeePage> {
   const { page, pageSize, sortBy, sortDir, ...filters } = query;
 
   const { items, total } = await repository.listEmployees({
@@ -20,25 +25,29 @@ export async function listEmployees(query: ListEmployeesQuery): Promise<Employee
 
   // A page past the end is a normal, empty result with accurate totals — not an error.
   return {
-    items,
+    items: items.map((employee) => serializeEmployee(employee, role)),
     meta: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
   };
 }
 
-export async function getEmployee(id: string): Promise<Employee> {
+export async function getEmployee(
+  id: string,
+  role: Role,
+): Promise<EmployeeFull | EmployeeDirectory> {
   const employee = await repository.findEmployeeById(id);
   if (!employee) {
     throw new NotFoundError('Employee not found', 'EMPLOYEE_NOT_FOUND');
   }
-  return employee;
+  return serializeEmployee(employee, role);
 }
 
-export function createEmployee(data: EmployeeInput): Promise<Employee> {
-  return repository.createEmployee(data);
+// Writes are HR-only (enforced by the router), so they answer with the full shape.
+export async function createEmployee(data: EmployeeInput): Promise<EmployeeFull> {
+  return serializeEmployee(await repository.createEmployee(data), 'HR_MANAGER');
 }
 
-export function updateEmployee(id: string, data: EmployeeInput): Promise<Employee> {
-  return repository.updateEmployee(id, data);
+export async function updateEmployee(id: string, data: EmployeeInput): Promise<EmployeeFull> {
+  return serializeEmployee(await repository.updateEmployee(id, data), 'HR_MANAGER');
 }
 
 export function deleteEmployee(id: string): Promise<void> {

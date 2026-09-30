@@ -1,3 +1,5 @@
+import type { EmployeeDirectory, EmployeeFull } from '@payscope/types';
+
 import type { Employee } from '../../generated/prisma/client.js';
 
 export type { Employee };
@@ -10,6 +12,6 @@ export interface PageMeta {
 }
 
 export interface EmployeePage {
-  items: Employee[];
+  items: (EmployeeFull | EmployeeDirectory)[];
   meta: PageMeta;
 }

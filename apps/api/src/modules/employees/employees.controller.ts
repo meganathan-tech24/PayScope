@@ -1,9 +1,10 @@
 import { once } from 'node:events';
 
-import type { ApiSuccessEnvelope } from '@payscope/types';
+import type { ApiSuccessEnvelope, EmployeeDirectory, EmployeeFull, Role } from '@payscope/types';
 import type { NextFunction, Request, Response } from 'express';
 
 import { toCsvRow } from '../../lib/csv.js';
+import { UnauthorizedError } from '../../lib/errors/app-error.js';
 
 import { EXPORT_COLUMNS, employeeToCsvCells } from './employees.export.js';
 import type {
@@ -12,10 +13,15 @@ import type {
   ListEmployeesQuery,
 } from './employees.schema.js';
 import * as service from './employees.service.js';
-import type { Employee } from './employees.types.js';
 
 // validate() has already replaced req.query/params/body with the parsed values.
 const idOf = (req: Request): string => req.params.id as string;
+// authenticate has already set req.user on every employees route; the check is
+// here so a route wired up without it fails closed instead of guessing a role.
+function roleOf(req: Request): Role {
+  if (!req.user) throw new UnauthorizedError();
+  return req.user.role;
+}
 
 function envelope<T>(req: Request, data: T): ApiSuccessEnvelope<T> {
   return { success: true, data, meta: { requestId: req.requestId } };
@@ -27,8 +33,11 @@ export async function listEmployeesHandler(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { items, meta } = await service.listEmployees(req.query as unknown as ListEmployeesQuery);
-    const body: ApiSuccessEnvelope<Employee[]> = {
+    const { items, meta } = await service.listEmployees(
+      req.query as unknown as ListEmployeesQuery,
+      roleOf(req),
+    );
+    const body: ApiSuccessEnvelope<(EmployeeFull | EmployeeDirectory)[]> = {
       success: true,
       data: items,
       meta: { requestId: req.requestId, ...meta },
@@ -45,7 +54,7 @@ export async function getEmployeeHandler(
   next: NextFunction,
 ): Promise<void> {
   try {
-    res.status(200).json(envelope(req, await service.getEmployee(idOf(req))));
+    res.status(200).json(envelope(req, await service.getEmployee(idOf(req), roleOf(req))));
   } catch (error) {
     next(error);
   }

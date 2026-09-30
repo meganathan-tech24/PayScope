@@ -91,6 +91,8 @@ All tests live in the root `tests/` workspace package (`@payscope/tests`), mirro
 | Layout | Follow the `CLAUDE.md` list only vs. mirror source exactly | Mirror source, so `api/unit/app`, `api/unit/seed`, `api/integration/app`, `api/integration/seed` and `modules/*` folders exist too | Keeps "the path tells you what is under test" true. The `.integration` file infix was dropped because the folder says it. |
 | Scope of the move | Move and tidy (shared builders, dedupe) vs. pure move | Pure move | Behaviour and counts stay provably identical. Extracting shared factories into `tests/helpers` and `tests/factories` (scaffolded, empty) is a separate cleanup. |
 
+**Which database the integration suite uses (fix after change request B).** The global setup used to force the `.env.test` template (`localhost:5432`) over everything, so on a machine where port 5432 is another PostgreSQL (or the project's container is mapped elsewhere) `pnpm test:integration` failed with `P1000` authentication errors even though `.env` was correct. Now the database is taken from the real environment (CI), then this machine's `.env` (`TEST_DATABASE_URL`), then the `.env.test` template; `DATABASE_URL` is set to that same URL, and the run is refused unless the database name ends in `_test`, because every table is truncated after each test. All other `.env.test` values (NODE_ENV, secrets, silent logs) still win.
+
 Verification: Vitest JSON reporter snapshots of every test's file and full name before the move and after it match exactly: 188 unit (API 178, web 2, shared 6, types 2) and 76 integration tests.
 
 ## Role-aware auth and data (change request C)

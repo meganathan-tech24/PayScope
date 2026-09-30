@@ -24,18 +24,18 @@ Tick each box as the work lands. The commit history mirrors this list.
 - [x] Employee management: create, view, edit, delete (API; UI in Phase 8)
 - [x] Server-side search, filter (country, department, job title), sort, and pagination
 - [x] CSV export (respects current filters) (API; download button in Phase 8)
-- [ ] Pay insights
-  - [ ] Min, median, average, max, p25, p75 by country, job title, and department
-  - [ ] Headcount distribution and salary bands
-  - [ ] Pay vs tenure summary
-  - [ ] Outlier detection (vs job-title median within a country)
-  - [ ] Optional USD-normalized view (static rate table, labeled approximate)
+- [x] Pay insights (API; dashboards in Phase 8)
+  - [x] Min, median, average, max, p25, p75 by country, job title, and department
+  - [x] Headcount distribution and salary bands
+  - [x] Pay vs tenure summary
+  - [x] Outlier detection (vs the job-title group within a country; HR only)
+  - [x] Optional USD-normalized view (static rate table, labeled approximate)
 - [x] Seed script with exactly 10,000 realistic employees across multiple countries
 
 ### Security
 
 - [x] Passwords hashed (bcrypt/Argon2id), never stored or logged in plain text
-- [ ] JWT verification middleware protecting all employee and insights routes (employee routes done; insights routes arrive in Phase 6)
+- [x] JWT verification middleware protecting all employee and insights routes
 - [x] Role-based access: `HR_MANAGER` (full), `VIEWER` (no writes)
 - [x] Role-based data, enforced by the API: a `VIEWER` never receives `salary` (list, detail, CSV export) and cannot sort by it
 - [x] Input validation and sanitization (zod) on body, query, and params
@@ -183,7 +183,13 @@ Base path `/api/v1`. All routes except register and login require `Authorization
 | PUT    | `/employees/:id`        | Update (HR_MANAGER)                           |
 | DELETE | `/employees/:id`        | Delete (HR_MANAGER)                           |
 | GET    | `/employees/export.csv` | CSV export of the filtered set (no salary column for a `VIEWER`) |
-| GET    | `/insights/*`           | Salary stats, bands, tenure (both roles, aggregated); outliers (HR_MANAGER only, 403 for VIEWER). Phase 6, not built yet |
+| GET    | `/insights/stats`       | Min, p25, median, avg, p75, max by `groupBy=country\|jobTitle\|department` (or `org` with `view=usd`), per currency |
+| GET    | `/insights/headcount`   | Headcount by country, department, job title or employment type |
+| GET    | `/insights/salary-bands`| Salary histogram for one `currency` (or `view=usd`) |
+| GET    | `/insights/tenure`      | Headcount, median and average pay by tenure band |
+| GET    | `/insights/outliers`    | Employees outside their group's pay range (HR_MANAGER only, 403 for VIEWER) |
+
+Insights accept optional `country`, `currency`, `department` and `jobTitle` filters. `view=usd` converts with a static, approximate rate table and says so in the response. A `VIEWER` does not receive groups of fewer than 5 people.
 
 ### Roles and access
 
@@ -191,7 +197,7 @@ One sign-in page serves every role (email and password only); the API returns th
 
 | | `HR_MANAGER` | `VIEWER` |
 | --- | --- | --- |
-| Insights | Full, including the outliers table | Aggregated statistics only; outliers endpoint is 403 |
+| Insights | Full, including the outliers table | Aggregated statistics only (groups under 5 people hidden); outliers endpoint is 403 |
 | Employee list and detail | All fields, including salary | Directory fields only: the `salary` key is omitted |
 | Sort and filter | Any whitelisted field | Salary sort is rejected with 400 |
 | CSV export | All columns | Same rows, no salary column |
@@ -213,6 +219,7 @@ Responses use a consistent envelope with a `requestId` for tracing:
 
 - **Currency:** salaries are stored in local currency as integer minor units and never silently mixed. Insights are per currency by default.
 - **Auth:** short-lived JWT, stateless. Server-side revocation is documented as a future step.
+- **Insights:** per-currency by default; the USD view is approximate and labelled. Outliers use Tukey fences within country, currency and job title. Measurements and the open outlier trade-off are in `docs/design-notes.md`.
 - **Roles:** the API filters salary out for `VIEWER` (allowlisted shape, role-aware CSV, salary sort rejected), so the UI cannot leak it. New users default to `VIEWER` (least privilege).
 - **Logging:** async database writes with a console fallback, so logging never fails a request.
 - **Scope:** payroll, tax, bonuses, approval workflows, and live FX rates are intentionally out of scope.

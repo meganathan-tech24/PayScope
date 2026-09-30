@@ -454,13 +454,15 @@ Field-level filtering happens **in the service layer**, through one serializer, 
 - `DELETE /employees/:id`
 - `GET    /employees/export.csv` (respects the current filters; stream it, do not buffer 10k rows in memory unnecessarily; no salary column for `VIEWER`)
 
-**Insights** (all questions HR actually asks)
+**Insights** (all questions HR actually asks; `GET /insights/...`, any signed-in role unless noted; optional `country`, `currency`, `department`, `jobTitle` filters)
 
-- Min / median / avg / max / p25 / p75 salary **by country, job title, department** (per currency), using Postgres `percentile_cont` through parameterized `$queryRaw`
-- Headcount distribution and salary bands (histogram buckets)
-- Pay vs tenure summary
-- Outliers: employees far above or below their job-title median within a country (**`HR_MANAGER` only**, 403 for `VIEWER`)
-- Optional USD-normalized org-wide summary (static documented rate table, labeled approximate)
+- `stats?groupBy=country|jobTitle|department[&view=usd]`: min / p25 / median / avg / p75 / max and headcount by group, always **per currency** (native view), using Postgres `percentile_cont` through parameterized `$queryRaw`. `groupBy=org` (one org-wide row) is only allowed with `view=usd`.
+- `headcount?by=country|department|jobTitle|employmentType`: headcount distribution (no salary data)
+- `salary-bands?currency=XXX&buckets=10` (or `view=usd`): equal-width salary histogram
+- `tenure`: headcount, median and average pay by tenure band (`<1y`, `1-3y`, `3-5y`, `5-10y`, `10y+`)
+- `outliers?limit=50`: employees outside the Tukey fences of their country, currency and job-title group (groups of at least 8); **`HR_MANAGER` only**, 403 for `VIEWER`
+- `view=usd`: optional org-wide normalization from a static, documented rate table; results are US cents, labelled `approximate`, and report employees with no rate instead of dropping them
+- For a `VIEWER`, groups (and salary-band sets) with fewer than 5 employees are suppressed, with a count of what was hidden, because a statistic over one person is that person's salary
 
 Provide **OpenAPI/Swagger** docs (e.g. `swagger-ui-express` at `/api/docs`, generated from or kept in sync with the zod schemas).
 
@@ -586,7 +588,7 @@ Run the critical flow for **both** roles, on a **desktop and a mobile viewport**
 
 Each phase ends with passing type-check, lint, format check and tests, and one or more small commits.
 
-**Status (from git history and code):** Phases 0 to 5 are done. Change requests A (toolchain upgrade), B (tests consolidated under `tests/`) and C (role-aware auth and data) are done. **Phase 6 is next.** The web app is still the Phase 1 scaffold (app shell, router and query provider, design tokens, no pages). CI is a skeleton with no E2E yet. Nothing is deployed.
+**Status (from git history and code):** Phases 0 to 6 are done. Change requests A (toolchain upgrade), B (tests consolidated under `tests/`), C (role-aware auth and data) and D (spec sync) are done; E is deferred until before Phase 10. **Phase 7 is next.** The web app is still the Phase 1 scaffold (app shell, router and query provider, design tokens, no pages). CI is a skeleton with no E2E yet. Nothing is deployed.
 
 **Phase 0: Requirements (no code)**
 Write `/docs/requirements.md` on **ONE page**: Goal, Persona, Scope and features, **What is deliberately left out and why**, Assumptions, Success criteria. Present it, list assumptions or open questions, and **wait for my approval**.
@@ -606,7 +608,7 @@ CRUD, search/filter/sort/pagination, CSV export, indexes, tests. `VIEWER` gets t
 **Phase 5: Seeding (10,000 employees)**
 Deterministic seed (seeded RNG): 8-10 countries with matching currencies, realistic name pools, 15-20 job titles with plausible per-country salary bands, departments, hire dates. Use `createMany` in batches inside transactions; must finish in seconds; re-runnable (`pnpm db:seed` resets employees and reseeds). Also seed two **clearly labeled demo** accounts, one `HR_MANAGER` and one `VIEWER` (credentials in README).
 
-**Phase 6: Insights module**
+**Phase 6: Insights module** (done)
 Percentile/statistics queries, bands, tenure, optional USD view, and the **HR-only outliers endpoint** (403 for `VIEWER`; the other insights endpoints return aggregated statistics to both roles). Record measured timings on 10k rows in `design-notes.md`. Tests on a small hand-checked dataset, including the role rules.
 
 **Phase 7: Web foundation, landing page and auth UI**
@@ -713,4 +715,4 @@ If time is limited, protect this order of importance for the submission: **worki
 
 ## 19. Start here
 
-Phases 0 to 5 and change requests A to C are done (section 12). **Continue with Phase 6 only**, in plan mode, and wait for approval before each further phase. `CLAUDE.md` holds the standing workflow rules.
+Phases 0 to 6 and change requests A to D are done (section 12). **Continue with Phase 7 only**, in plan mode, and wait for approval before each further phase. `CLAUDE.md` holds the standing workflow rules.

@@ -90,3 +90,12 @@ Key prompts and instructions given to the AI coding tool, and the decisions that
 - **What the AI proposed:** Edit the spec section by section against `CLAUDE.md`, and state phase status from `git log` and the code rather than from the plan. The spec header now says `CLAUDE.md` wins on conflict.
 - **What I changed or rejected, and why:** Left insights, web UI, E2E and deployment items unticked. Wrote change request E's production-start smoke check as planned, based on the one-line description in the request and the open `node dist/server.js` defect in `design-notes.md`; its exact scope should be confirmed when E is planned.
 - **Outcome:** Phases 0 to 5 done, plus change requests A to C. Phase 6 is next. No code changed.
+
+---
+
+## Phase 6: Insights module
+- **Prompt / instruction:** Read `CLAUDE.md` and do Phase 6 (insights module) only: plan mode first, show the plan and commit list, wait for approval.
+- **What the AI proposed:** A 7-commit plan (approved before code): types and query schemas, then stats, headcount and salary bands, tenure, the USD view and the HR-only outliers endpoint as separate commits, then docs. Raw parameterised SQL with whitelisted identifiers, per-currency grouping, Tukey-fence outliers, and a small-group suppression rule for VIEWER (flagged in the plan as beyond `CLAUDE.md` and needing confirmation).
+- **What I changed or rejected, and why:** Approved as proposed. During the build: edges of salary buckets are rounded up so they match integer salaries exactly; the USD view reports employees without a rate instead of dropping them; test fixtures avoid SQL-looking strings; a flaky assertion (searching a body that contains a random request id) was replaced with one on `data`. Measurements on the seed showed the outlier baseline flags most interns; recorded in design-notes as a decision for the user rather than changed silently.
+- **Outcome:** Seven commits. Typecheck, lint (0 errors, the one known warning), format, unit and integration tests pass. Counts: unit 221 to 260, integration 112 to 165. Every endpoint answers in about 5 to 20 ms on 10,000 rows.
+

@@ -24,6 +24,9 @@ export default defineConfig({
         test: {
           name: 'api-unit',
           environment: 'node',
+          // Building the app hashes a bcrypt password at import time; on a busy machine that
+          // can pass the 5 s default and fail a correct test.
+          testTimeout: 15_000,
           include: ['api/unit/**/*.test.ts'],
         },
       },

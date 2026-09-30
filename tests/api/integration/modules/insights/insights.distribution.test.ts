@@ -91,6 +91,7 @@ describe('GET /insights/salary-bands (integration)', () => {
     expect(response.body.data).toEqual({
       view: 'native',
       approximate: false,
+      excludedHeadcount: 0,
       currency: 'GBP',
       headcount: 10,
       suppressed: false,

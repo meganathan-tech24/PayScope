@@ -1,4 +1,4 @@
-import { APPROXIMATE_USD_RATES } from '@payscope/shared';
+import { APPROXIMATE_USD_RATES, minorUnitExponent } from '@payscope/shared';
 
 import {
   COUNTRIES,
@@ -46,19 +46,7 @@ export const OUTLIER_RATE = 0.005;
 
 const MS_PER_DAY = 86_400_000;
 
-// ISO 4217 minor-unit exponent (JPY 0, most currencies 2) straight from ICU.
-const exponentCache = new Map<string, number>();
-
-export function minorUnitExponent(currency: string): number {
-  let exponent = exponentCache.get(currency);
-  if (exponent === undefined) {
-    exponent =
-      new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions()
-        .maximumFractionDigits ?? 2;
-    exponentCache.set(currency, exponent);
-  }
-  return exponent;
-}
+export { minorUnitExponent };
 
 // Keep three significant figures so amounts look like real salaries (84,300 not 84,317).
 function roundToThreeSignificant(value: number): number {

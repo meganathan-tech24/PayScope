@@ -1,27 +1,38 @@
-import type { HeadcountRow, InsightStats, Role, SalaryBands, TenureSummary } from '@payscope/types';
-
-import { ValidationError } from '../../lib/errors/app-error.js';
+import type {
+  HeadcountRow,
+  InsightMeta,
+  InsightStats,
+  InsightView,
+  Role,
+  SalaryBands,
+  TenureSummary,
+} from '@payscope/types';
 
 import { canSeeGroup, limitGroupsForRole } from './insights.access.js';
 import { buildBuckets } from './insights.bands.js';
 import * as repository from './insights.repository.js';
 import type {
   HeadcountQuery,
+  InsightFilters,
   SalaryBandsQuery,
   StatsQuery,
   TenureQuery,
 } from './insights.schema.js';
 
+// The USD view is labelled approximate (static rates) and says how many employees
+// could not be converted; the native view never converts anything.
+async function metaFor(view: InsightView, filters: InsightFilters): Promise<InsightMeta> {
+  if (view === 'native') return { view, approximate: false, excludedHeadcount: 0 };
+  return { view, approximate: true, excludedHeadcount: await repository.countWithoutRate(filters) };
+}
+
 export async function getStats(query: StatsQuery, role: Role): Promise<InsightStats> {
   const { groupBy, view, ...filters } = query;
-  if (groupBy === 'org' || view !== 'native') {
-    throw new ValidationError('The USD view is not available yet');
-  }
 
-  const groups = await repository.getStats(groupBy, filters);
+  const groups = await repository.getStats(groupBy, filters, repository.salarySource(view));
   const { visible, suppressed } = limitGroupsForRole(groups, role);
 
-  return { view: 'native', approximate: false, rows: visible, suppressedGroups: suppressed };
+  return { ...(await metaFor(view, filters)), rows: visible, suppressedGroups: suppressed };
 }
 
 // Headcount carries no salary data, so every role sees every group.
@@ -32,21 +43,21 @@ export async function getHeadcount(query: HeadcountQuery): Promise<HeadcountRow[
 
 export async function getSalaryBands(query: SalaryBandsQuery, role: Role): Promise<SalaryBands> {
   const { view, buckets, ...filters } = query;
-  if (view !== 'native' || !filters.currency) {
-    throw new ValidationError('The USD view is not available yet');
-  }
+  const source = repository.salarySource(view);
+  const meta = await metaFor(view, filters);
+  const currency = view === 'usd' ? 'USD' : (filters.currency as string);
 
-  const { headcount, min, max } = await repository.getSalaryRange(filters);
-  const meta = { view, approximate: false, currency: filters.currency } as const;
+  const { headcount, min, max } = await repository.getSalaryRange(filters, source);
 
   // Too small a set would expose individual salaries as the range and bucket edges.
   if (headcount === 0 || !canSeeGroup(headcount, role)) {
-    return { ...meta, headcount: 0, buckets: [], suppressed: headcount > 0 };
+    return { ...meta, currency, headcount: 0, buckets: [], suppressed: headcount > 0 };
   }
 
-  const counts = await repository.getBucketCounts(filters, min, max, buckets);
+  const counts = await repository.getBucketCounts(filters, source, min, max, buckets);
   return {
     ...meta,
+    currency,
     headcount,
     buckets: buildBuckets(min, max, buckets, counts),
     suppressed: false,
@@ -55,13 +66,10 @@ export async function getSalaryBands(query: SalaryBandsQuery, role: Role): Promi
 
 export async function getTenure(query: TenureQuery, role: Role): Promise<TenureSummary> {
   const { view, ...filters } = query;
-  if (view !== 'native') {
-    throw new ValidationError('The USD view is not available yet');
-  }
 
   const asOf = new Date().toISOString().slice(0, 10);
-  const bands = await repository.getTenureBands(filters, asOf);
+  const bands = await repository.getTenureBands(filters, repository.salarySource(view), asOf);
   const { visible, suppressed } = limitGroupsForRole(bands, role);
 
-  return { view: 'native', approximate: false, bands: visible, suppressedGroups: suppressed };
+  return { ...(await metaFor(view, filters)), bands: visible, suppressedGroups: suppressed };
 }

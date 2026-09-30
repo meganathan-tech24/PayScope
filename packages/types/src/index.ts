@@ -64,6 +64,8 @@ export interface InsightMeta {
   view: InsightView;
   /** True for the USD view: static illustrative rates, never live FX. */
   approximate: boolean;
+  /** USD view only: employees left out because their currency has no rate in the table. */
+  excludedHeadcount: number;
 }
 
 export interface InsightStatsRow {

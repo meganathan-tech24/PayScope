@@ -44,6 +44,7 @@ describe('GET /insights/tenure (integration)', () => {
     expect(response.body.data).toEqual({
       view: 'native',
       approximate: false,
+      excludedHeadcount: 0,
       suppressedGroups: 0,
       bands: [
         { band: '<1y', currency: 'GBP', headcount: 5, median: 3000, avg: 3000 },

@@ -56,6 +56,7 @@ describe('GET /insights/stats (integration)', () => {
     expect(response.body.data).toEqual({
       view: 'native',
       approximate: false,
+      excludedHeadcount: 0,
       suppressedGroups: 0,
       rows: [
         row('DE', 'EUR', 3, [1000, 1500, 2000, 2000, 2500, 3000]),

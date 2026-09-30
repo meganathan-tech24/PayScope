@@ -1,4 +1,5 @@
-import type { TenureBand } from '@payscope/types';
+import { usdConversionTable } from '@payscope/shared';
+import type { InsightStatsRow, InsightView, TenureBand } from '@payscope/types';
 
 import { prisma } from '../../database/prisma.js';
 import { Prisma } from '../../generated/prisma/client.js';
@@ -6,15 +7,53 @@ import { Prisma } from '../../generated/prisma/client.js';
 import type { HEADCOUNT_BY, InsightFilters } from './insights.schema.js';
 
 // Raw SQL is parameterised: values are always bound parameters. The only
-// interpolated fragments are these fixed identifiers, chosen from a whitelist by
-// key, never built from request input.
+// interpolated fragments are fixed identifiers and expressions chosen from a
+// whitelist by key, never built from request input.
 const GROUP_COLUMN = {
   country: Prisma.raw('e."country"'),
   jobTitle: Prisma.raw('e."jobTitle"'),
   department: Prisma.raw('e."department"'),
+  org: Prisma.raw(`'All employees'::text`),
 } as const;
 
 export type GroupColumn = keyof typeof GROUP_COLUMN;
+
+const HEADCOUNT_COLUMN: Record<(typeof HEADCOUNT_BY)[number], Prisma.Sql> = {
+  country: GROUP_COLUMN.country,
+  jobTitle: GROUP_COLUMN.jobTitle,
+  department: GROUP_COLUMN.department,
+  employmentType: Prisma.raw('e."employmentType"::text'),
+};
+
+// Where salary and currency come from. Native reads the stored values; the USD view
+// joins the static rate table (passed as bound arrays) and converts to US cents.
+// An employee whose currency has no rate is not joined, and is counted separately.
+export interface SalarySource {
+  withClause: Prisma.Sql;
+  from: Prisma.Sql;
+  salary: Prisma.Sql;
+  currency: Prisma.Sql;
+}
+
+export function salarySource(view: InsightView): SalarySource {
+  if (view === 'native') {
+    return {
+      withClause: Prisma.empty,
+      from: Prisma.sql`"Employee" e`,
+      salary: Prisma.sql`e."salary"`,
+      currency: Prisma.sql`e."currency"`,
+    };
+  }
+  const { currencies, divisors } = usdConversionTable();
+  return {
+    withClause: Prisma.sql`WITH "rates" AS (
+      SELECT * FROM unnest(${currencies}::text[], ${divisors}::float8[]) AS r("currency", "divisor")
+    )`,
+    from: Prisma.sql`"Employee" e JOIN "rates" r ON r."currency" = e."currency"`,
+    salary: Prisma.sql`(e."salary"::float8 * 100 / r."divisor")`,
+    currency: Prisma.sql`'USD'::text`,
+  };
+}
 
 export function whereClause(filters: InsightFilters): Prisma.Sql {
   const conditions: Prisma.Sql[] = [];
@@ -27,39 +66,29 @@ export function whereClause(filters: InsightFilters): Prisma.Sql {
     : Prisma.empty;
 }
 
-interface RawStatsRow {
-  key: string;
-  currency: string;
-  headcount: number;
-  min: number;
-  p25: number;
-  median: number;
-  avg: number;
-  p75: number;
-  max: number;
-}
-
 // Counts are cast to int and money to float8 so the driver returns plain numbers
 // (no BigInt); money is rounded to whole minor units in JS.
 export async function getStats(
   groupBy: GroupColumn,
   filters: InsightFilters,
-): Promise<RawStatsRow[]> {
+  source: SalarySource,
+): Promise<InsightStatsRow[]> {
   const column = GROUP_COLUMN[groupBy];
-  const rows = await prisma.$queryRaw<RawStatsRow[]>(Prisma.sql`
+  const rows = await prisma.$queryRaw<InsightStatsRow[]>(Prisma.sql`
+    ${source.withClause}
     SELECT ${column} AS "key",
-           e."currency" AS "currency",
+           ${source.currency} AS "currency",
            COUNT(*)::int AS "headcount",
-           MIN(e."salary")::float8 AS "min",
-           percentile_cont(0.25) WITHIN GROUP (ORDER BY e."salary") AS "p25",
-           percentile_cont(0.5) WITHIN GROUP (ORDER BY e."salary") AS "median",
-           AVG(e."salary")::float8 AS "avg",
-           percentile_cont(0.75) WITHIN GROUP (ORDER BY e."salary") AS "p75",
-           MAX(e."salary")::float8 AS "max"
-    FROM "Employee" e
+           MIN(${source.salary})::float8 AS "min",
+           percentile_cont(0.25) WITHIN GROUP (ORDER BY ${source.salary}) AS "p25",
+           percentile_cont(0.5) WITHIN GROUP (ORDER BY ${source.salary}) AS "median",
+           AVG(${source.salary})::float8 AS "avg",
+           percentile_cont(0.75) WITHIN GROUP (ORDER BY ${source.salary}) AS "p75",
+           MAX(${source.salary})::float8 AS "max"
+    FROM ${source.from}
     ${whereClause(filters)}
-    GROUP BY ${column}, e."currency"
-    ORDER BY ${column}, e."currency"`);
+    GROUP BY 1, 2
+    ORDER BY 1, 2`);
 
   return rows.map((row) => ({
     ...row,
@@ -71,13 +100,6 @@ export async function getStats(
     max: Math.round(row.max),
   }));
 }
-
-const HEADCOUNT_COLUMN: Record<(typeof HEADCOUNT_BY)[number], Prisma.Sql> = {
-  country: GROUP_COLUMN.country,
-  jobTitle: GROUP_COLUMN.jobTitle,
-  department: GROUP_COLUMN.department,
-  employmentType: Prisma.raw('e."employmentType"::text'),
-};
 
 export function getHeadcount(
   by: (typeof HEADCOUNT_BY)[number],
@@ -94,31 +116,37 @@ export function getHeadcount(
 
 export async function getSalaryRange(
   filters: InsightFilters,
+  source: SalarySource,
 ): Promise<{ headcount: number; min: number; max: number }> {
   const [row] = await prisma.$queryRaw<
     { headcount: number; min: number | null; max: number | null }[]
-  >(
-    Prisma.sql`
-      SELECT COUNT(*)::int AS "headcount",
-             MIN(e."salary")::float8 AS "min",
-             MAX(e."salary")::float8 AS "max"
-      FROM "Employee" e
-      ${whereClause(filters)}`,
-  );
-  return { headcount: row?.headcount ?? 0, min: row?.min ?? 0, max: row?.max ?? 0 };
+  >(Prisma.sql`
+    ${source.withClause}
+    SELECT COUNT(*)::int AS "headcount",
+           MIN(${source.salary})::float8 AS "min",
+           MAX(${source.salary})::float8 AS "max"
+    FROM ${source.from}
+    ${whereClause(filters)}`);
+  return {
+    headcount: row?.headcount ?? 0,
+    min: Math.round(row?.min ?? 0),
+    max: Math.round(row?.max ?? 0),
+  };
 }
 
 // Counts per equal-width bucket over [min, max + 1); the +1 puts the maximum in the last bucket.
 export async function getBucketCounts(
   filters: InsightFilters,
+  source: SalarySource,
   min: number,
   max: number,
   buckets: number,
 ): Promise<Map<number, number>> {
   const rows = await prisma.$queryRaw<{ bucket: number; count: number }[]>(Prisma.sql`
-    SELECT width_bucket(e."salary"::float8, ${min}::float8, ${max + 1}::float8, ${buckets}::int) AS "bucket",
+    ${source.withClause}
+    SELECT width_bucket(${source.salary}, ${min}::float8, ${max + 1}::float8, ${buckets}::int) AS "bucket",
            COUNT(*)::int AS "count"
-    FROM "Employee" e
+    FROM ${source.from}
     ${whereClause(filters)}
     GROUP BY 1`);
   return new Map(rows.map((row) => [row.bucket, row.count]));
@@ -126,15 +154,20 @@ export async function getBucketCounts(
 
 // Tenure in years is the whole-day difference from `asOf` (a YYYY-MM-DD date the
 // service supplies, so tests never depend on the database clock) over 365.25.
-export async function getTenureBands(filters: InsightFilters, asOf: string): Promise<TenureBand[]> {
+export async function getTenureBands(
+  filters: InsightFilters,
+  source: SalarySource,
+  asOf: string,
+): Promise<TenureBand[]> {
   const rows = await prisma.$queryRaw<TenureBand[]>(Prisma.sql`
+    ${source.withClause}
     SELECT t."band" AS "band",
            t."currency" AS "currency",
            COUNT(*)::int AS "headcount",
            percentile_cont(0.5) WITHIN GROUP (ORDER BY t."salary") AS "median",
            AVG(t."salary")::float8 AS "avg"
     FROM (
-      SELECT e."salary", e."currency", e."hireDate",
+      SELECT ${source.salary} AS "salary", ${source.currency} AS "currency",
              CASE
                WHEN (${asOf}::date - e."hireDate") / 365.25 < 1 THEN '<1y'
                WHEN (${asOf}::date - e."hireDate") / 365.25 < 3 THEN '1-3y'
@@ -142,7 +175,7 @@ export async function getTenureBands(filters: InsightFilters, asOf: string): Pro
                WHEN (${asOf}::date - e."hireDate") / 365.25 < 10 THEN '5-10y'
                ELSE '10y+'
              END AS "band"
-      FROM "Employee" e
+      FROM ${source.from}
       ${whereClause(filters)}
     ) t
     GROUP BY t."band", t."currency"
@@ -150,4 +183,17 @@ export async function getTenureBands(filters: InsightFilters, asOf: string): Pro
              CASE t."band" WHEN '<1y' THEN 1 WHEN '1-3y' THEN 2 WHEN '3-5y' THEN 3 WHEN '5-10y' THEN 4 ELSE 5 END`);
 
   return rows.map((row) => ({ ...row, median: Math.round(row.median), avg: Math.round(row.avg) }));
+}
+
+// USD view: employees whose currency is not in the rate table, so the view can say
+// how many were left out instead of dropping them silently.
+export async function countWithoutRate(filters: InsightFilters): Promise<number> {
+  const { currencies } = usdConversionTable();
+  const [row] = await prisma.$queryRaw<{ count: number }[]>(Prisma.sql`
+    SELECT COUNT(*)::int AS "count"
+    FROM "Employee" e
+    ${whereClause(filters)}
+    ${filters.country || filters.currency || filters.department || filters.jobTitle ? Prisma.sql`AND` : Prisma.sql`WHERE`}
+    e."currency" <> ALL(${currencies}::text[])`);
+  return row?.count ?? 0;
 }

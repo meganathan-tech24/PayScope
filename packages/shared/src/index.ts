@@ -1,4 +1,10 @@
-export { APPROXIMATE_USD_RATES, isRateCurrency, type RateCurrency } from './fx-rates.js';
+export {
+  APPROXIMATE_USD_RATES,
+  isRateCurrency,
+  usdConversionTable,
+  type RateCurrency,
+} from './fx-rates.js';
+export { minorUnitExponent } from './minor-units.js';
 export { ROLES } from './roles.js';
 export { employeeDirectorySchema, employeeFullSchema } from './employee-schemas.js';
 export { isIsoCountryCode, isIsoCurrencyCode } from './iso-codes.js';

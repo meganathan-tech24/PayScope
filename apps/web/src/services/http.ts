@@ -1,4 +1,4 @@
-import type { ApiErrorEnvelope, ApiSuccessEnvelope } from '@payscope/types';
+import type { ApiErrorEnvelope, ApiMeta, ApiSuccessEnvelope } from '@payscope/types';
 
 // The server answered with an error envelope (or something that is not JSON).
 export class ApiError extends Error {
@@ -32,7 +32,26 @@ export interface HttpClientOptions {
 
 export interface HttpClient {
   get<T>(path: string): Promise<T>;
+  /** Like get, but also returns the envelope's meta (page, total, ...). */
+  getPage<T>(path: string): Promise<{ data: T; meta: ApiMeta }>;
   post<T>(path: string, body?: unknown): Promise<T>;
+  put<T>(path: string, body?: unknown): Promise<T>;
+  delete(path: string): Promise<void>;
+  /** A file the server sends as a body (for example a CSV), with the name it suggests. */
+  download(path: string, accept: string): Promise<{ blob: Blob; filename: string }>;
+}
+
+/** Appends a query string, leaving out undefined, null and empty values. */
+export function withQuery(
+  path: string,
+  params: Record<string, string | number | undefined | null>,
+): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') query.set(key, String(value));
+  }
+  const text = query.toString();
+  return text ? `${path}?${text}` : path;
 }
 
 async function readError(response: Response): Promise<ApiError> {
@@ -52,9 +71,16 @@ async function readError(response: Response): Promise<ApiError> {
 export function createHttpClient(options: HttpClientOptions): HttpClient {
   const baseUrl = options.baseUrl.replace(/\/+$/, '');
 
-  async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  // Sends the request and returns the response only if it succeeded; every failure is an
+  // ApiError or NetworkError, and a 401 on a request that carried a token ends the session.
+  async function send(
+    method: string,
+    path: string,
+    body?: unknown,
+    accept = 'application/json',
+  ): Promise<Response> {
     const token = options.getToken();
-    const headers: Record<string, string> = { Accept: 'application/json' };
+    const headers: Record<string, string> = { Accept: accept };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -75,13 +101,32 @@ export function createHttpClient(options: HttpClientOptions): HttpClient {
       if (response.status === 401 && token) options.onUnauthorized();
       throw await readError(response);
     }
+    return response;
+  }
 
-    if (response.status === 204) return undefined as T;
-    return ((await response.json()) as ApiSuccessEnvelope<T>).data;
+  async function envelope<T>(response: Response): Promise<ApiSuccessEnvelope<T> | undefined> {
+    if (response.status === 204) return undefined;
+    return (await response.json()) as ApiSuccessEnvelope<T>;
   }
 
   return {
-    get: (path) => request('GET', path),
-    post: (path, body) => request('POST', path, body),
+    get: async <T>(path: string) => (await envelope<T>(await send('GET', path)))?.data as T,
+    getPage: async <T>(path: string) => {
+      const body = (await envelope<T>(await send('GET', path))) as ApiSuccessEnvelope<T>;
+      return { data: body.data, meta: body.meta };
+    },
+    post: async <T>(path: string, body?: unknown) =>
+      (await envelope<T>(await send('POST', path, body)))?.data as T,
+    put: async <T>(path: string, body?: unknown) =>
+      (await envelope<T>(await send('PUT', path, body)))?.data as T,
+    delete: async (path) => {
+      await send('DELETE', path);
+    },
+    download: async (path, accept) => {
+      const response = await send('GET', path, undefined, accept);
+      const disposition = response.headers.get('Content-Disposition') ?? '';
+      const filename = /filename="?([^";]+)"?/i.exec(disposition)?.[1] ?? 'download';
+      return { blob: await response.blob(), filename };
+    },
   };
 }

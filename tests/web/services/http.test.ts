@@ -7,7 +7,7 @@ import {
   stubFetch,
   stubFetchNetworkFailure,
 } from '@tests/helpers/fetch-mock.js';
-import { ApiError, createHttpClient, NetworkError } from '@web/services/http';
+import { ApiError, createHttpClient, NetworkError, withQuery } from '@web/services/http';
 
 function build(token: string | null = null) {
   const onUnauthorized = vi.fn();
@@ -109,5 +109,95 @@ describe('http client', () => {
     stubFetch(() => new Response(null, { status: 204 }));
 
     await expect(build().client.post('/x')).resolves.toBeUndefined();
+  });
+});
+
+describe('http client, paging, writes and downloads', () => {
+  it('getPage returns the data together with the paging meta', async () => {
+    stubFetch(() =>
+      jsonResponse(200, {
+        success: true,
+        data: [{ id: 'e1' }],
+        meta: { requestId: 'req_test', page: 2, pageSize: 25, total: 60, totalPages: 3 },
+      }),
+    );
+
+    const page = await build().client.getPage('/employees?page=2');
+
+    expect(page.data).toEqual([{ id: 'e1' }]);
+    expect(page.meta).toMatchObject({ page: 2, total: 60, totalPages: 3 });
+  });
+
+  it('sends PUT with a JSON body and DELETE with none, and accepts a 204', async () => {
+    const { calls } = stubFetch((request) =>
+      request.method === 'DELETE' ? new Response(null, { status: 204 }) : apiSuccess({ id: 'e1' }),
+    );
+    const { client } = build('valid.token');
+
+    const updated = await client.put('/employees/e1', { fullName: 'Ada' });
+    await expect(client.delete('/employees/e1')).resolves.toBeUndefined();
+
+    expect(updated).toEqual({ id: 'e1' });
+    expect(calls.map((c) => [c.method, c.json])).toEqual([
+      ['PUT', { fullName: 'Ada' }],
+      ['DELETE', undefined],
+    ]);
+    expect(calls[1]?.headers.get('Authorization')).toBe('Bearer valid.token');
+  });
+
+  it('downloads a file with the bearer token, the accept header and the suggested name', async () => {
+    const { calls } = stubFetch(
+      () =>
+        new Response('id,fullName\r\ne1,Ada\r\n', {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/csv',
+            'Content-Disposition': 'attachment; filename="employees-2026-09-30.csv"',
+          },
+        }),
+    );
+
+    const file = await build('valid.token').client.download('/employees/export.csv', 'text/csv');
+
+    expect(file.filename).toBe('employees-2026-09-30.csv');
+    expect(await file.blob.text()).toContain('e1,Ada');
+    expect(calls[0]?.headers.get('Authorization')).toBe('Bearer valid.token');
+    expect(calls[0]?.headers.get('Accept')).toBe('text/csv');
+  });
+
+  it('names a download "download" when the server suggests nothing', async () => {
+    stubFetch(() => new Response('x', { status: 200 }));
+
+    expect((await build().client.download('/x', 'text/csv')).filename).toBe('download');
+  });
+
+  it('applies the 401 rule to downloads and writes too', async () => {
+    stubFetch(() => apiError(401, 'UNAUTHORIZED', 'Invalid or expired token'));
+    const { client, onUnauthorized } = build('expired.token');
+
+    await expect(client.download('/employees/export.csv', 'text/csv')).rejects.toMatchObject({
+      status: 401,
+    });
+    await expect(client.delete('/employees/e1')).rejects.toMatchObject({ status: 401 });
+
+    expect(onUnauthorized).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('withQuery', () => {
+  it('drops empty, undefined and null values and encodes the rest', () => {
+    expect(
+      withQuery('/employees', {
+        page: 2,
+        search: 'o brien',
+        country: '',
+        jobTitle: undefined,
+        x: null,
+      }),
+    ).toBe('/employees?page=2&search=o+brien');
+  });
+
+  it('returns the bare path when nothing is set', () => {
+    expect(withQuery('/employees', { search: '' })).toBe('/employees');
   });
 });

@@ -165,16 +165,16 @@ Base path `/api/v1`. All routes except register and login require `Authorization
 
 | Method | Endpoint                | Description                                   |
 | ------ | ----------------------- | --------------------------------------------- |
-| POST   | `/auth/register`        | Create an account, returns `{ user, token }`  |
-| POST   | `/auth/login`           | Log in, returns `{ user, token }`             |
-| GET    | `/auth/me`              | Current user                                  |
+| POST   | `/auth/register`        | Create an account; optional `role` (`HR_MANAGER` or `VIEWER`), omitted gives a `VIEWER`. Returns `{ user, token }` |
+| POST   | `/auth/login`           | Email and password only; returns `{ user, token }`, `user.role` included |
+| GET    | `/auth/me`              | Current user, including `role`                |
 | POST   | `/auth/logout`          | Client-side token discard (stateless)         |
-| GET    | `/employees`            | List with search, filters, sort, pagination   |
+| GET    | `/employees`            | List with search, filters, sort, pagination. A `VIEWER` gets no `salary` field and cannot sort by salary (400) |
 | POST   | `/employees`            | Create (HR_MANAGER)                           |
-| GET    | `/employees/:id`        | Get one                                       |
+| GET    | `/employees/:id`        | Get one (no `salary` field for a `VIEWER`)    |
 | PUT    | `/employees/:id`        | Update (HR_MANAGER)                           |
 | DELETE | `/employees/:id`        | Delete (HR_MANAGER)                           |
-| GET    | `/employees/export.csv` | CSV export of the filtered set                |
+| GET    | `/employees/export.csv` | CSV export of the filtered set (no salary column for a `VIEWER`) |
 | GET    | `/insights/*`           | Salary stats, bands, tenure, outliers         |
 
 Responses use a consistent envelope with a `requestId` for tracing:

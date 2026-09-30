@@ -93,6 +93,19 @@ All tests live in the root `tests/` workspace package (`@payscope/tests`), mirro
 
 Verification: Vitest JSON reporter snapshots of every test's file and full name before the move and after it match exactly: 188 unit (API 178, web 2, shared 6, types 2) and 76 integration tests.
 
+## Role-aware auth and data (change request C)
+
+| Decision | Options considered | Choice | Reason |
+| -------- | ------------------ | ------ | ------ |
+| Who picks the role at registration | Server decides (always VIEWER) vs. client chooses from a fixed set | Client may send `role` (`HR_MANAGER` or `VIEWER`), default `VIEWER` when omitted | Assessment-only simplification so a reviewer can try both experiences without an admin. It means anyone can make themselves an HR Manager, which a real product must not allow. Production alternative: HR Managers invite Viewers (the invite fixes the role), or new HR Manager accounts need admin approval and self-registration only ever creates a VIEWER. |
+| Invalid role input | Coerce or ignore vs. reject | 400 for an unknown value, a different case, `null`, or any other extra field (schema stays `.strict()`) | A typo must never silently produce a different privilege level. |
+| DB default for `User.role` | Keep `HR_MANAGER` vs. `VIEWER` | `VIEWER` (own migration) | Registration and the seed pass explicit roles (both demo users), so nothing depends on the default; if a future code path forgets the role it now gets least privilege. |
+| Where salary is filtered | Controller, repository, UI, or service | Service, through one serializer | Every service function takes the caller's role and returns wire shapes, so a controller cannot receive a raw row. The response types (`EmployeeFull`, `EmployeeDirectory` in `@payscope/types`) differ, so returning the wrong one is a compile error. |
+| How the VIEWER shape is built | Delete `salary` from the row vs. explicit allowlist | Explicit allowlist of fields, and an `hrOnly` flag on export columns | A column added to the model later stays hidden from VIEWERs until someone lists it. The directory shape has no `salary` key at all (not null). Any role other than exactly `HR_MANAGER` gets it, so an unexpected value in a token fails closed. |
+| Sorting by salary | Allow (order only) vs. reject for VIEWER | Reject with 400 on list and export | A list sorted by salary reveals the ranking even without the numbers. There is no salary filter today (the strict query schema already rejects unknown fields); a future one must be added to `assertQueryAllowed`. |
+| Auth router construction | Module-level router vs. one per app | One per `createApp()` (as the app-wide limiter already was) | The register/login limiter (10 per 15 minutes) was shared across every app in a test file, so the role tests hit 429. Each app now has its own counter. |
+| Test tokens | Register through the API vs. hand-sign | Hand-signed in `tests/helpers/tokens.ts`, plus a few tests that use real registered users | `authenticate` trusts the signed payload, so signing is fast and needs no DB row; the real-user tests prove the same behavior end to end. |
+
 ## Performance (10,000 employees)
 Measured on the real seed (`pnpm db:seed`), local Docker Postgres 16, single runs on the upgraded stack (Node 24, Express 5, Prisma 7 with the pg adapter). HTTP times are curl on localhost with the demo HR login; DB times are `EXPLAIN ANALYZE` from Phase 5 (database-level, unaffected by the upgrade). Indicative only, not a benchmark.
 

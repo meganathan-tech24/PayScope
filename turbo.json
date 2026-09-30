@@ -20,6 +20,23 @@
     "test:e2e": {
       "cache": false,
       "dependsOn": ["^build"]
+    },
+    "@payscope/tests#typecheck": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/apps/*/src/**",
+        "$TURBO_ROOT$/packages/*/src/**",
+        "$TURBO_ROOT$/apps/api/prisma/**"
+      ]
+    },
+    "@payscope/tests#test": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/apps/*/src/**",
+        "$TURBO_ROOT$/packages/*/src/**",
+        "$TURBO_ROOT$/apps/api/prisma/**"
+      ]
     }
   }
 }

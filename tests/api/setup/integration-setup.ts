@@ -1,6 +1,6 @@
 import { afterEach } from 'vitest';
 
-import { prisma } from '../database/prisma.js';
+import { prisma } from '@api/database/prisma.js';
 
 afterEach(async () => {
   await prisma.$executeRawUnsafe(

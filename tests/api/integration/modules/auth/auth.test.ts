@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 
-import { createApp } from '../../../app/app.js';
+import { createApp } from '@api/app/app.js';
 
 const VALID_PASSWORD = 'Passw0rd!';
 

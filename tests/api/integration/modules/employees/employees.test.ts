@@ -2,8 +2,8 @@ import type { Express } from 'express';
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { createApp } from '../../../app/app.js';
-import { signToken } from '../../../lib/jwt.js';
+import { createApp } from '@api/app/app.js';
+import { signToken } from '@api/lib/jwt.js';
 
 // Fresh app per test so the in-memory rate limiter never accumulates across tests.
 let app: Express;

@@ -2,10 +2,10 @@ import type { Express } from 'express';
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { createApp } from '../../../app/app.js';
-import { prisma } from '../../../database/prisma.js';
-import { signToken } from '../../../lib/jwt.js';
-import { streamEmployees } from '../employees.repository.js';
+import { createApp } from '@api/app/app.js';
+import { prisma } from '@api/database/prisma.js';
+import { signToken } from '@api/lib/jwt.js';
+import { streamEmployees } from '@api/modules/employees/employees.repository.js';
 
 const EXPORT = '/api/v1/employees/export.csv';
 const HEADER =

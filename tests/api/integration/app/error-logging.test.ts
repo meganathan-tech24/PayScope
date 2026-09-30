@@ -1,8 +1,8 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 
-import { prisma } from '../../database/prisma.js';
-import { createApp } from '../app.js';
+import { createApp } from '@api/app/app.js';
+import { prisma } from '@api/database/prisma.js';
 
 describe('error handling + async logging (integration)', () => {
   it('persists a real ApplicationLog row for an unmatched route, with a matching requestId', async () => {

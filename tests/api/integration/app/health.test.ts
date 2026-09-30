@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 
-import { createApp } from '../app.js';
+import { createApp } from '@api/app/app.js';
 
 describe('GET /api/v1/health (integration)', () => {
   it('returns 200 with database: up against the real test database', async () => {

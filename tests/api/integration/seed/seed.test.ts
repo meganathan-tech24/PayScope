@@ -2,9 +2,9 @@ import type { Express } from 'express';
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { createApp } from '../../app/app.js';
-import { prisma } from '../../database/prisma.js';
-import { DEFAULT_DEMO_PASSWORD, DEMO_USERS, runSeed } from '../seed.js';
+import { createApp } from '@api/app/app.js';
+import { prisma } from '@api/database/prisma.js';
+import { DEFAULT_DEMO_PASSWORD, DEMO_USERS, runSeed } from '@api/seed/seed.js';
 
 let app: Express;
 beforeEach(() => {

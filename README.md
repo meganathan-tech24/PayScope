@@ -21,9 +21,9 @@ Tick each box as the work lands. The commit history mirrors this list.
 ### Product features
 
 - [x] Registration (optional role, default `VIEWER`) and a single login for every role that returns the role, with JWT (API and web UI)
-- [x] Employee management: create, view, edit, delete (API; UI in Phase 8)
+- [x] Employee management: create, view, edit, delete (API and web UI)
 - [x] Server-side search, filter (country, department, job title), sort, and pagination
-- [x] CSV export (respects current filters) (API; download button in Phase 8)
+- [x] CSV export (respects current filters) (API and web UI)
 - [x] Pay insights (API; dashboards in Phase 8)
   - [x] Min, median, average, max, p25, p75 by country, job title, and department
   - [x] Headcount distribution and salary bands
@@ -58,13 +58,13 @@ Tick each box as the work lands. The commit history mirrors this list.
 - [ ] Feature-based architecture (auth, employees, insights)
 - [x] Tailwind design system defined in `tailwind.config.js` plus a global stylesheet
 - [x] Protected routes, auth interceptor, auto-logout on 401
-- [ ] Loading, empty, and error states; keyboard-accessible forms
+- [x] Loading, empty, and error states; keyboard-accessible forms
 
 ### Quality
 
 - [x] TypeScript strict mode across the monorepo
 - [x] ESLint and Prettier enforced locally and in CI
-- [ ] Frontend tests (Vitest + React Testing Library)
+- [x] Frontend tests (Vitest + React Testing Library)
 - [x] Backend unit and integration tests (Vitest + Supertest, real PostgreSQL), all under `tests/`
 - [x] Test-location guard: `pnpm lint` fails if a test file appears outside `tests/`
 - [ ] Playwright E2E test for the critical flow (both roles, desktop and mobile viewports)
@@ -205,7 +205,7 @@ One sign-in page serves every role (email and password only); the API returns th
 
 Registration accepts an optional `role` (`HR_MANAGER` or `VIEWER`); omitting it gives a `VIEWER`. Anything else is a 400.
 
-Web routes: `/` landing, `/login`, `/register`, `/app` and `/app/employees` (signed in; placeholders until the dashboards and employee table are built), `/403` and a 404 page.
+Web routes: `/` landing, `/login`, `/register`, `/app` and `/app/employees` (signed in; `/app/employees` is the employee list, `/app` is a placeholder until the insights dashboard), `/403` and a 404 page.
 
 Responses use a consistent envelope with a `requestId` for tracing:
 

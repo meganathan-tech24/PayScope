@@ -95,6 +95,25 @@ All tests live in the root `tests/` workspace package (`@payscope/tests`), mirro
 
 Verification: Vitest JSON reporter snapshots of every test's file and full name before the move and after it match exactly: 188 unit (API 178, web 2, shared 6, types 2) and 76 integration tests.
 
+## Employees UI (Phase 8a)
+
+| Decision | Options considered | Choice | Reason |
+| -------- | ------------------ | ------ | ------ |
+| Where list state lives | Component state vs. URL | The URL query string (`page`, `search`, `country`, `department`, `jobTitle`, `sortBy`, `sortDir`) | A view can be reloaded, shared and bookmarked and Back steps through it. Invalid values fall back to defaults, and a VIEWER's hand-typed `sortBy=salary` falls back too (the API would answer 400). Changing anything but the page returns to page 1. |
+| Debounced search | Debounce the input vs. debounce the request | The URL follows every keystroke (history replaced, so Back is not flooded); only the request waits 300 ms | One source of truth for the input, no state to re-sync when filters are cleared or Back is pressed. |
+| Loading | Skeleton every time vs. keep old rows | `keepPreviousData`: skeleton only on the first load, then the current rows stay, dimmed and `aria-busy` | No flashing while paging or filtering. |
+| Filter options | New endpoint vs. reuse | The headcount insight (`by=country|department|jobTitle`), open to both roles | No API change; cached 5 minutes. |
+| Money | Divide by 100 vs. per currency | `minor / 10^fractionDigits` from the currency itself, each row in its own currency, no totals | JPY has no minor unit, KWD has three. The form takes major units ("85,000.50"), rejects more decimals than the currency allows, and converts to integers without floating error. |
+| Table vs. cards | One responsive table vs. two layouts | A table from `md` up and cards below (both are in the DOM, CSS shows one), plus a sort select for small screens | A wide table would scroll sideways on a phone; header buttons do not exist on cards. |
+| VIEWER layout | Disable salary and write controls vs. build without | Built without: no salary column or sort option, no actions column, no Add button, and a heading that says salaries are not shown | Matches `CLAUDE.md`: no empty columns or disabled buttons. |
+| Dialogs | Native `<dialog>` vs. own modal | Own modal (`role="dialog"`, `aria-modal`, labelled, focus moved in and trapped, Escape and backdrop close, focus restored) | jsdom has no `showModal`, so a native dialog could not be tested honestly; the behaviour is identical in every browser and covered by tests. |
+| Export | Plain link vs. fetch and save | Fetch with the bearer token, then save the blob; the API now exposes `Content-Disposition` and `X-Request-Id` through CORS | The endpoint needs the token. Without the exposed header a cross-origin browser saves `download.csv`; found in a browser run. |
+| Retries | Library default (3) vs. selective | Two retries, only for network errors and 5xx | A 4xx will not change, and an error state should appear within seconds. |
+
+**Checked in a browser against the real API** (built app, Chrome, seeded 10,000 employees), 27 checks, all passing: 25 rows per page and the range text; Japan rows show whole yen (`¥10,500,000`) and US rows show cents; search, sort (`aria-sort`) and paging; the HR export keeps the salary column (10,001 lines, named `employees-<date>.csv`) and the VIEWER export has none; create (yen), edit (prefilled `6500000`) and delete of a test employee; the VIEWER has no salary column, no amounts, no write controls and no salary sort option; and at 360, 768 and 1280 px there is no horizontal scroll, cards below `md` and a table from it, and every control is at least 44 px. Two real defects came out of this and were fixed with commits that say so: the download name (above), and a visually hidden table header that made the page 94 px too wide at 768 px (`position: absolute` escaping an unpositioned scroll wrapper; jsdom cannot see layout).
+
+**Known limits.** On a phone the filters stack and push the list down the screen; a collapsible filter panel would help. There is no bulk edit. The visual check is geometry and screenshots, not a screen-reader session. The insights dashboards, charts and the responsive pass on `/app` are Phase 8b.
+
 ## Web foundation (Phase 7)
 
 **Token storage: localStorage.** The API is a separate origin that takes `Authorization: Bearer` tokens, and the JWT is stateless and short-lived (1 h). The two realistic options are localStorage and an httpOnly cookie:

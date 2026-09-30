@@ -82,3 +82,11 @@ Key prompts and instructions given to the AI coding tool, and the decisions that
 - **What I changed or rejected, and why:** Approved with three additions: build the directory shape from an explicit allowlist (not by deleting salary), parse VIEWER responses with the strict directory schema as well as searching the raw text, and note the default role in the README API table. Two things found while doing it: the auth rate limiter was module-level, so the new tests hit 429 (routers are now built per app), and two of my commits initially carried a type error and a lint error because my checks did not stop the commit; both were fixed by amending the unpushed commit, and the checks now gate the commit.
 - **Outcome:** Nine commits. Typecheck, lint (0 errors, the one known warning), format, unit and integration tests pass. Counts: unit 188 to 221, integration 76 to 112. No README box was ticked: the role boxes depend on the web UI.
 
+
+---
+
+## Change request D: Sync PROJECT_SPEC.md and README
+- **Prompt / instruction:** Docs only. Sync `PROJECT_SPEC.md` with `CLAUDE.md` and with what was built (stack versions, `tests/` structure, pages and roles, registration role default, role-based data, testing rules, phases, CI and scripts), fix the README, tick only boxes that are done and tested, and report which phases are done.
+- **What the AI proposed:** Edit the spec section by section against `CLAUDE.md`, and state phase status from `git log` and the code rather than from the plan. The spec header now says `CLAUDE.md` wins on conflict.
+- **What I changed or rejected, and why:** Left insights, web UI, E2E and deployment items unticked. Wrote change request E's production-start smoke check as planned, based on the one-line description in the request and the open `node dist/server.js` defect in `design-notes.md`; its exact scope should be confirmed when E is planned.
+- **Outcome:** Phases 0 to 5 done, plus change requests A to C. Phase 6 is next. No code changed.

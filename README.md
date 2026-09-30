@@ -10,7 +10,7 @@ Salary management and pay insights for HR teams. Replaces scattered spreadsheets
 | Role | Email | Password |
 | ---- | ----- | -------- |
 | HR Manager (full access) | `hr.demo@acme.example` | `DemoPassw0rd!` |
-| Viewer (read-only) | `viewer.demo@acme.example` | `DemoPassw0rd!` |
+| Viewer (directory and aggregated data only: no salaries, no writes) | `viewer.demo@acme.example` | `DemoPassw0rd!` |
 
 ---
 
@@ -20,7 +20,7 @@ Tick each box as the work lands. The commit history mirrors this list.
 
 ### Product features
 
-- [x] Registration and login with JWT (API; UI in Phase 7)
+- [x] Registration (optional role, default `VIEWER`) and a single login for every role that returns the role, with JWT (API; UI in Phase 7)
 - [x] Employee management: create, view, edit, delete (API; UI in Phase 8)
 - [x] Server-side search, filter (country, department, job title), sort, and pagination
 - [x] CSV export (respects current filters) (API; download button in Phase 8)
@@ -35,8 +35,9 @@ Tick each box as the work lands. The commit history mirrors this list.
 ### Security
 
 - [x] Passwords hashed (bcrypt/Argon2id), never stored or logged in plain text
-- [ ] JWT verification middleware protecting all employee and insights routes
-- [x] Role-based access: `HR_MANAGER` (full), `VIEWER` (read-only)
+- [ ] JWT verification middleware protecting all employee and insights routes (employee routes done; insights routes arrive in Phase 6)
+- [x] Role-based access: `HR_MANAGER` (full), `VIEWER` (no writes)
+- [x] Role-based data, enforced by the API: a `VIEWER` never receives `salary` (list, detail, CSV export) and cannot sort by it
 - [x] Input validation and sanitization (zod) on body, query, and params
 - [x] Rate limiting (stricter on auth routes), helmet, restricted CORS
 - [x] Enumeration-safe login errors
@@ -64,8 +65,9 @@ Tick each box as the work lands. The commit history mirrors this list.
 - [x] TypeScript strict mode across the monorepo
 - [x] ESLint and Prettier enforced locally and in CI
 - [ ] Frontend tests (Vitest + React Testing Library)
-- [x] Backend unit and integration tests (Vitest + Supertest, real PostgreSQL)
-- [ ] Playwright E2E test for the critical flow
+- [x] Backend unit and integration tests (Vitest + Supertest, real PostgreSQL), all under `tests/`
+- [x] Test-location guard: `pnpm lint` fails if a test file appears outside `tests/`
+- [ ] Playwright E2E test for the critical flow (both roles, desktop and mobile viewports)
 - [ ] GitHub Actions pipeline: type check, lint, format check, tests, build, E2E
 - [ ] Deployed with a managed PostgreSQL database, seeded with 10,000 employees
 
@@ -75,12 +77,15 @@ Tick each box as the work lands. The commit history mirrors this list.
 
 | Area     | Technology                                              |
 | -------- | ------------------------------------------------------- |
-| Frontend | React, TypeScript, Vite, Tailwind CSS, React Router, TanStack Query |
-| Backend  | Node.js, Express, TypeScript, JWT, zod, pino            |
-| Database | PostgreSQL, Prisma ORM, Prisma migrations               |
-| Testing  | Vitest, React Testing Library, Supertest, Playwright    |
-| Quality  | ESLint, Prettier, TypeScript strict mode                |
-| Tooling  | pnpm workspaces, Turborepo, Docker, GitHub Actions      |
+| Runtime  | Node.js 24 LTS                                          |
+| Frontend | React 19.3, TypeScript 6, Vite 8, Tailwind CSS 3.4, React Router 8, TanStack Query |
+| Backend  | Express 5, TypeScript, JWT, Zod 4, pino                 |
+| Database | PostgreSQL, Prisma 7 (driver adapter), Prisma migrations |
+| Testing  | Vitest 5, React Testing Library, Supertest, Playwright  |
+| Quality  | ESLint 9, Prettier, TypeScript strict mode              |
+| Tooling  | pnpm 12 workspaces, Turborepo, Docker, GitHub Actions   |
+
+Version table and the deliberate holds: [`docs/design-notes.md`](docs/design-notes.md).
 
 ---
 
@@ -97,7 +102,10 @@ packages/
   types/          shared TypeScript types
   eslint-config/  shared lint rules
   typescript-config/
-tests/            all tests (@payscope/tests): api/{unit,integration}, web, packages, e2e (Playwright, Phase 9)
+tests/            all tests (@payscope/tests), mirroring source paths:
+  api/{unit,integration,setup}   web   packages/{shared,types}   e2e (Playwright, Phase 9)
+  helpers/ (signed tokens per role)   factories/ (data builders)
+scripts/          check-test-locations.mjs (fails if a test file is outside tests/)
 docs/             requirements, design notes, architecture, AI prompts, demo script
 ```
 
@@ -147,11 +155,11 @@ pnpm dev                        # web on :5173, api on :4000
 | `pnpm dev`             | Run web and api in watch mode         |
 | `pnpm build`           | Build all apps and packages           |
 | `pnpm typecheck`       | TypeScript checks                     |
-| `pnpm lint`            | ESLint                                |
+| `pnpm lint`            | ESLint, then the test-location guard  |
 | `pnpm format:check`    | Prettier check                        |
 | `pnpm test`            | Unit tests (api, web, packages)       |
 | `pnpm test:integration`| API integration tests (needs Postgres)|
-| `pnpm test:e2e`        | Playwright E2E tests                  |
+| `pnpm test:e2e`        | Playwright E2E tests (none yet, Phase 9) |
 | `pnpm db:migrate`      | Apply Prisma migrations               |
 | `pnpm db:generate`     | Regenerate the Prisma client          |
 | `pnpm db:seed`         | Replace all employees with 10,000 seeded ones and upsert the two demo users (deterministic, re-runnable; refuses in production unless `ALLOW_PRODUCTION_SEED=true`) |
@@ -175,7 +183,23 @@ Base path `/api/v1`. All routes except register and login require `Authorization
 | PUT    | `/employees/:id`        | Update (HR_MANAGER)                           |
 | DELETE | `/employees/:id`        | Delete (HR_MANAGER)                           |
 | GET    | `/employees/export.csv` | CSV export of the filtered set (no salary column for a `VIEWER`) |
-| GET    | `/insights/*`           | Salary stats, bands, tenure, outliers         |
+| GET    | `/insights/*`           | Salary stats, bands, tenure (both roles, aggregated); outliers (HR_MANAGER only, 403 for VIEWER). Phase 6, not built yet |
+
+### Roles and access
+
+One sign-in page serves every role (email and password only); the API returns the user's `role`, and the app shows the matching experience. Data rules are enforced by the API, not the UI:
+
+| | `HR_MANAGER` | `VIEWER` |
+| --- | --- | --- |
+| Insights | Full, including the outliers table | Aggregated statistics only; outliers endpoint is 403 |
+| Employee list and detail | All fields, including salary | Directory fields only: the `salary` key is omitted |
+| Sort and filter | Any whitelisted field | Salary sort is rejected with 400 |
+| CSV export | All columns | Same rows, no salary column |
+| Create, edit, delete | Yes | No (403) |
+
+Registration accepts an optional `role` (`HR_MANAGER` or `VIEWER`); omitting it gives a `VIEWER`. Anything else is a 400.
+
+Planned routes (Phases 7 and 8): `/` landing, `/login`, `/register`, `/app` (dashboard), `/app/employees`, with 404 and 403 pages.
 
 Responses use a consistent envelope with a `requestId` for tracing:
 
@@ -189,6 +213,7 @@ Responses use a consistent envelope with a `requestId` for tracing:
 
 - **Currency:** salaries are stored in local currency as integer minor units and never silently mixed. Insights are per currency by default.
 - **Auth:** short-lived JWT, stateless. Server-side revocation is documented as a future step.
+- **Roles:** the API filters salary out for `VIEWER` (allowlisted shape, role-aware CSV, salary sort rejected), so the UI cannot leak it. New users default to `VIEWER` (least privilege).
 - **Logging:** async database writes with a console fallback, so logging never fails a request.
 - **Scope:** payroll, tax, bonuses, approval workflows, and live FX rates are intentionally out of scope.
 
@@ -214,7 +239,8 @@ Built with an agentic AI coding tool guided by [`PROJECT_SPEC.md`](PROJECT_SPEC.
 
 ## Known limitations
 
-- Registration defaults to the `HR_MANAGER` role (demo simplification)
+- Anyone can register as `HR_MANAGER` or `VIEWER` (default `VIEWER`). This is an assessment-only simplification; production would use HR-Manager invites for Viewers or admin approval for HR accounts (see `docs/design-notes.md`)
+- `node dist/server.js` after `pnpm build` does not start yet (`@payscope/shared` is consumed as TypeScript source); recorded in `docs/design-notes.md`. Change request E plans a production-start smoke check for CI
 - No password reset, email verification, or refresh-token rotation
 - USD normalization uses a static rate table and is approximate
 - Single-tenant only

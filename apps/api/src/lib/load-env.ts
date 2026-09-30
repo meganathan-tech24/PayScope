@@ -7,5 +7,10 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '../../../..');
 
 export function loadEnvFile(filename: string, options: { override?: boolean } = {}): void {
-  loadDotenv({ path: path.join(repoRoot, filename), override: options.override ?? false });
+  // quiet: dotenv 17+ otherwise prints an "injected env" banner on every start.
+  loadDotenv({
+    path: path.join(repoRoot, filename),
+    override: options.override ?? false,
+    quiet: true,
+  });
 }

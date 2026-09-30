@@ -348,9 +348,15 @@ importers:
 
   packages/shared:
     dependencies:
+      '@payscope/types':
+        specifier: workspace:*
+        version: link:../types
       i18n-iso-countries:
         specifier: ^7.14.0
         version: 7.14.0
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
     devDependencies:
       '@payscope/eslint-config':
         specifier: workspace:*

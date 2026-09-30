@@ -1,4 +1,6 @@
 export { APPROXIMATE_USD_RATES, isRateCurrency, type RateCurrency } from './fx-rates.js';
+export { ROLES } from './roles.js';
+export { employeeDirectorySchema, employeeFullSchema } from './employee-schemas.js';
 export { isIsoCountryCode, isIsoCurrencyCode } from './iso-codes.js';
 
 export const DEFAULT_PAGE_SIZE = 25;

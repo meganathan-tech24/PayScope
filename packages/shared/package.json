@@ -17,6 +17,8 @@
     "typescript": "~6.0.3"
   },
   "dependencies": {
-    "i18n-iso-countries": "^7.14.0"
+    "@payscope/types": "workspace:*",
+    "i18n-iso-countries": "^7.14.0",
+    "zod": "^4.6.5"
   }
 }

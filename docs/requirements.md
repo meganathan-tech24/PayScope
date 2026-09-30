@@ -1,49 +1,50 @@
-# Requirements — PayScope (Phase 0)
+# PayScope: requirements
 
 ## Goal
-Give ACME's HR Manager a fast, secure web app to manage salary data for 10,000 employees across multiple countries, replacing spreadsheets, and to answer pay questions (by country, department, job title, tenure) that Excel makes tedious.
+
+Give an HR Manager one fast, secure place to manage employee salaries and see pay insights, instead of scattered spreadsheets.
 
 ## Persona
-**HR Manager, ACME.** Not a developer. Needs to find/edit employee records quickly, trust the data is consistent, and get pay insights without writing formulas. Works across multiple countries/currencies.
 
-## Scope and features
-**In scope**
-- Registration/login (JWT-protected app). Registration defaults to `HR_MANAGER` (demo simplification, documented).
-- Employee CRUD: full name, email, job title, department, country, currency, salary (integer minor units), employment type, hire date.
-- Server-side search, filter (country, department, job title), sort, pagination — responsive at 10k rows.
-- CSV export respecting active filters, streamed (not buffered in memory).
-- Insights dashboard: min/median/avg/max/p25/p75 by country/job title/department (per currency), headcount distribution & salary bands, pay-vs-tenure summary, outliers vs job-title median within a country, optional USD-normalized org view (static, labeled-approximate rate table).
-- Seed script: deterministic, 10,000 realistic employees, 8-10 countries with matching currencies, plus one demo `HR_MANAGER` user.
-- Two roles: `HR_MANAGER` (full access), `VIEWER` (read-only) — write routes require `HR_MANAGER`.
+The HR Manager of ACME. ACME has 10,000 employees in several countries and pays in several currencies. They need to find people, correct records, compare pay, and spot unfair gaps.
 
-**Deliberately out of scope** (documented rationale, revisit later if needed)
-- **Payroll/tax calculation** — a distinct regulated domain per country; not what this assessment tests.
-- **Bonuses, equity, benefits, salary history/audit trail** — adds real modeling complexity (temporal data, versioning) beyond the core CRUD + insights ask; would be the natural next feature.
-- **Approval workflows** — needs a workflow/state-machine layer and multi-user roles beyond HR_MANAGER/VIEWER.
-- **Live FX rates** — an external dependency and failure mode for a value that's clearly labeled approximate anyway; a static documented table is sufficient and deterministic for tests.
-- **Password reset, email verification, refresh-token rotation, SSO** — auth hardening that doesn't change the core product story; short-lived JWT + documented revocation strategy is enough for a demo.
-- **Multi-tenancy** — single organization (ACME) is the stated scope; multi-tenant data isolation is a separate architectural concern.
+## Roles
+
+- **HR Manager:** sees and edits everything, including individual salaries and the outliers list.
+- **Viewer:** a read-only colleague. A Viewer **never sees an individual salary**. The API removes it, so the screen cannot leak it. A Viewer gets the employee directory and aggregated statistics only.
+
+## Scope (built)
+
+- Register, and one sign-in page for both roles. Signed-in visitors go to `/app`.
+- Employees: create, view, edit, delete (HR Manager). Search, filter by country, department and job title, sort, paginate. CSV export of the filtered set.
+- Pay insights: min, quartiles, median, average and max by country, job title and department. Headcount, salary bands, pay by tenure, and outliers (HR Manager only).
+- A seed of 10,000 synthetic employees and two labelled demo accounts.
+- Works on a phone, tablet and desktop.
+
+## Deliberately left out, and why
+
+- **Payroll and tax:** a different product with legal weight.
+- **Bonuses and equity:** one salary figure per employee keeps comparisons clear.
+- **Salary history:** needs an audit design; not needed to answer today's questions.
+- **Approval workflows:** heavy for the value here.
+- **Live exchange rates:** insights are per currency. The optional USD view uses a fixed table and says it is approximate.
+- **Password reset and email verification:** needs email delivery.
+- **Multi-tenancy:** ACME is the only customer.
 
 ## Assumptions
-1. Registration is open and defaults every new user to `HR_MANAGER` — acceptable only because this is a demo/assessment; a real system would invite-only or admin-provision accounts.
-2. "Multiple countries" = 8-10 seeded countries with their real ISO currencies, not full global coverage.
-3. Salary is a single fixed annual (or otherwise consistent) figure per employee in local currency minor units — no pay components, no recurring changes over time.
-4. USD normalization is for org-wide *viewing* only, never used to alter stored data or per-currency insights.
-5. "Fast at 10k rows" means server-side pagination/filtering keeps list and insights queries in the low hundreds of ms locally; no specific SLA was given, so this will be measured and recorded in `design-notes.md` rather than targeted to a number in advance.
-6. One environment/deployment target is enough for this assessment (no staging tier).
-7. Token storage mechanism (localStorage vs httpOnly cookie) is an implementation decision to be justified in `design-notes.md` in Phase 7, not a Phase 0 decision.
+
+- Salary is one annual figure, stored in the local currency's smallest unit.
+- Currencies are never mixed silently.
+- Anyone can choose a role when registering. This is a demo shortcut; production would use invitations or admin approval.
+- The data is synthetic.
 
 ## Success criteria
-- HR Manager can register/login, and CRUD an employee, in under a few clicks each.
-- Employee list search/filter/sort/pagination stays responsive against the full 10,000-row seed.
-- Insights answer the stated HR questions correctly, verified against a small hand-checked dataset.
-- CSV export respects active filters and streams rather than loading all rows into memory.
-- No plaintext passwords/tokens ever stored or logged; all employee/insights routes require a valid JWT; writes require `HR_MANAGER`.
-- `pnpm typecheck && pnpm lint && pnpm format:check && pnpm test` all pass in CI on every PR.
-- Each phase lands as its own reviewable, Conventional-Commit history — no squashing.
 
-## Open questions
-- None blocking — proceeding with the assumptions above. Will flag inline if anything in later phases changes scope.
+- A Viewer's responses never contain a `salary` key, and salary sort or filter is refused for them. Tests prove it.
+- Lists and insights answer in tens of milliseconds on 10,000 rows.
+- Typecheck, lint, format and tests pass.
+- Every page has no sideways page scroll at 360, 768 and 1280 px.
 
----
-Next: Phase 1 (monorepo, tooling, design system) — will not start until this doc is approved.
+## Not done yet
+
+Playwright end-to-end tests and OpenAPI documentation are planned, not built. See `design-notes.md`.

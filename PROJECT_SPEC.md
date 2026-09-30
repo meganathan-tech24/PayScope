@@ -67,7 +67,7 @@ Versions are the latest stable releases verified in change request A (see the ta
 
 ### Runtime and tooling
 
-- **Node.js 24 LTS** (pinned in `.nvmrc`, root `engines` and CI; Node 20 is end-of-life)
+- **Node.js 24 (Current until October 2026, then LTS)** (pinned in `.nvmrc`, root `engines` and CI; Node 20 is end-of-life)
 - **pnpm 12** workspaces + **Turborepo** (keep the Turbo config minimal)
 
 ### Frontend
@@ -588,7 +588,7 @@ Run the critical flow for **both** roles, on a **desktop and a mobile viewport**
 
 Each phase ends with passing type-check, lint, format check and tests, and one or more small commits.
 
-**Status (from git history and code):** Phases 0 to 8 are done. Change requests A (toolchain upgrade), B (tests consolidated under `tests/`), C (role-aware auth and data) and D (spec sync) are done; E is deferred until before Phase 10. **Phase 8 is done (8a employees UI, 8b insights UI and the responsive pass). Phase 9 is next.** CI is a skeleton with no E2E yet. Nothing is deployed.
+**Status (from git history and code):** Phases 0 to 8 are done. Change requests A (toolchain upgrade), B (tests consolidated under `tests/`), C (role-aware auth and data), D (spec sync) and E (production start on Render, bundled API) are done, plus the Viewer salary-band rounding. The web app is on Vercel and the API on Render with a managed PostgreSQL database. **Phase 9 is next:** Playwright end-to-end tests and OpenAPI docs are not built, and no GitHub Actions run has been observed.
 
 **Phase 0: Requirements (no code)**
 Write `/docs/requirements.md` on **ONE page**: Goal, Persona, Scope and features, **What is deliberately left out and why**, Assumptions, Success criteria. Present it, list assumptions or open questions, and **wait for my approval**.
@@ -715,4 +715,4 @@ If time is limited, protect this order of importance for the submission: **worki
 
 ## 19. Start here
 
-Phases 0 to 8 and change requests A to D are done (section 12). **Continue with Phase 9 only**, in plan mode, and wait for approval before each further phase. `CLAUDE.md` holds the standing workflow rules.
+Phases 0 to 8 and change requests A to E are done (section 12). **Continue with Phase 9 only**, in plan mode, and wait for approval before each further phase. `CLAUDE.md` holds the standing workflow rules.

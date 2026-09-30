@@ -2,9 +2,7 @@
 
 Salary management and pay insights for HR teams. Replaces scattered spreadsheets with a fast, secure web app that stays responsive at 10,000+ employees.
 
-**Live app:** `<add URL after deployment>`
-**API docs (Swagger):** `<live-url>/api/docs`
-**Demo video:** `<add link>`
+**Live app:** `https://pay-scope-alpha.vercel.app/login`
 **Demo logins** (public demo accounts only, created by `pnpm db:seed`; the password is public, so change it with `DEMO_USER_PASSWORD` on any deployed environment):
 
 | Role | Email | Password |
@@ -34,7 +32,7 @@ Tick each box as the work lands. The commit history mirrors this list.
 
 ### Security
 
-- [x] Passwords hashed (bcrypt/Argon2id), never stored or logged in plain text
+- [x] Passwords hashed (bcrypt, cost 12), never stored or logged in plain text
 - [x] JWT verification middleware protecting all employee and insights routes
 - [x] Role-based access: `HR_MANAGER` (full), `VIEWER` (no writes)
 - [x] Role-based data, enforced by the API: a `VIEWER` never receives `salary` (list, detail, CSV export) and cannot sort by it
@@ -69,7 +67,7 @@ Tick each box as the work lands. The commit history mirrors this list.
 - [x] Test-location guard: `pnpm lint` fails if a test file appears outside `tests/`
 - [ ] Playwright E2E test for the critical flow (both roles, desktop and mobile viewports)
 - [ ] GitHub Actions pipeline: type check, lint, format check, tests, build, E2E
-- [ ] Deployed with a managed PostgreSQL database, seeded with 10,000 employees
+- [x] Deployed: web on Vercel, API on Render, managed PostgreSQL seeded with 10,000 employees (checked from outside; see `docs/design-notes.md`)
 
 ---
 
@@ -77,7 +75,7 @@ Tick each box as the work lands. The commit history mirrors this list.
 
 | Area     | Technology                                              |
 | -------- | ------------------------------------------------------- |
-| Runtime  | Node.js 24 LTS                                          |
+| Runtime  | Node.js 24                                          |
 | Frontend | React 19.3, TypeScript 6, Vite 8, Tailwind CSS 3.4, React Router 8, TanStack Query |
 | Backend  | Express 5, TypeScript, JWT, Zod 4, pino                 |
 | Database | PostgreSQL, Prisma 7 (driver adapter), Prisma migrations |
@@ -121,7 +119,7 @@ More detail and diagrams: [`docs/architecture.md`](docs/architecture.md).
 
 ## Getting started
 
-Prerequisites: Node.js 24 LTS (see `.nvmrc`), pnpm 12 (`corepack enable` picks the pinned version), Docker. `pnpm install` also generates the Prisma client into `apps/api/src/generated/` (git-ignored).
+Prerequisites: Node.js 24 (see `.nvmrc`), pnpm 12 (`corepack enable` picks the pinned version), Docker. `pnpm install` also generates the Prisma client into `apps/api/src/generated/` (git-ignored).
 
 ```bash
 pnpm install

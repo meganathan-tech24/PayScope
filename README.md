@@ -5,7 +5,12 @@ Salary management and pay insights for HR teams. Replaces scattered spreadsheets
 **Live app:** `<add URL after deployment>`
 **API docs (Swagger):** `<live-url>/api/docs`
 **Demo video:** `<add link>`
-**Demo login:** `<email>` / `<password>` (demo account only, created by the seed script)
+**Demo logins** (public demo accounts only, created by `pnpm db:seed`; the password is public, so change it with `DEMO_USER_PASSWORD` on any deployed environment):
+
+| Role | Email | Password |
+| ---- | ----- | -------- |
+| HR Manager (full access) | `hr.demo@acme.example` | `DemoPassw0rd!` |
+| Viewer (read-only) | `viewer.demo@acme.example` | `DemoPassw0rd!` |
 
 ---
 
@@ -25,7 +30,7 @@ Tick each box as the work lands. The commit history mirrors this list.
   - [ ] Pay vs tenure summary
   - [ ] Outlier detection (vs job-title median within a country)
   - [ ] Optional USD-normalized view (static rate table, labeled approximate)
-- [ ] Seed script with exactly 10,000 realistic employees across multiple countries
+- [x] Seed script with exactly 10,000 realistic employees across multiple countries
 
 ### Security
 
@@ -133,6 +138,8 @@ pnpm dev                        # web on :5173, api on :4000
 | `LOG_LEVEL`        | Console log level                            |
 | `LOG_DB_MIN_LEVEL` | Minimum level persisted to `ApplicationLog`  |
 | `VITE_API_URL`     | API base URL used by the web app             |
+| `DEMO_USER_PASSWORD` | Optional. Overrides the demo accounts' password when seeding |
+| `ALLOW_PRODUCTION_SEED` | Optional. Must be `true` to seed when `NODE_ENV=production` |
 
 ### Scripts
 
@@ -147,7 +154,9 @@ pnpm dev                        # web on :5173, api on :4000
 | `pnpm test:integration`| API integration tests (needs Postgres)|
 | `pnpm test:e2e`        | Playwright E2E tests                  |
 | `pnpm db:migrate`      | Apply Prisma migrations               |
-| `pnpm db:seed`         | Reset and seed 10,000 employees       |
+| `pnpm db:generate`     | Regenerate the Prisma client          |
+| `pnpm db:seed`         | Replace all employees with 10,000 seeded ones and upsert the two demo users (deterministic, re-runnable; refuses in production unless `ALLOW_PRODUCTION_SEED=true`) |
+| `pnpm db:reset`        | Drop and re-migrate the database, then seed (same production guard) |
 
 ---
 
@@ -210,3 +219,4 @@ Built with an agentic AI coding tool guided by [`PROJECT_SPEC.md`](PROJECT_SPEC.
 - No password reset, email verification, or refresh-token rotation
 - USD normalization uses a static rate table and is approximate
 - Single-tenant only
+- The seeded demo accounts use a publicly documented password (override with `DEMO_USER_PASSWORD`); seeded data is synthetic and its dates are fixed relative to 2026-06-30

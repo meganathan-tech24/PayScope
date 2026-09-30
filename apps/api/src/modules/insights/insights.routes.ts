@@ -1,16 +1,19 @@
 import { Router } from 'express';
 
 import { authenticate } from '../../middleware/auth.middleware.js';
+import { authorize } from '../../middleware/authorize.middleware.js';
 import { validate } from '../../middleware/validation.middleware.js';
 
 import {
   headcountHandler,
+  outliersHandler,
   salaryBandsHandler,
   statsHandler,
   tenureHandler,
 } from './insights.controller.js';
 import {
   headcountQuerySchema,
+  outliersQuerySchema,
   salaryBandsQuerySchema,
   statsQuerySchema,
   tenureQuerySchema,
@@ -30,3 +33,11 @@ insightsRouter.get(
   salaryBandsHandler,
 );
 insightsRouter.get('/tenure', validate({ query: tenureQuerySchema }), tenureHandler);
+// Individuals with salaries: HR only. authorize runs before validate, so a VIEWER
+// gets a 403 without learning anything about valid parameters.
+insightsRouter.get(
+  '/outliers',
+  authorize('HR_MANAGER'),
+  validate({ query: outliersQuerySchema }),
+  outliersHandler,
+);

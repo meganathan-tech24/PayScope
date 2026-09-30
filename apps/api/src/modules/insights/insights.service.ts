@@ -3,10 +3,13 @@ import type {
   InsightMeta,
   InsightStats,
   InsightView,
+  OutlierList,
   Role,
   SalaryBands,
   TenureSummary,
 } from '@payscope/types';
+
+import { ForbiddenError } from '../../lib/errors/app-error.js';
 
 import { canSeeGroup, limitGroupsForRole } from './insights.access.js';
 import { buildBuckets } from './insights.bands.js';
@@ -14,6 +17,7 @@ import * as repository from './insights.repository.js';
 import type {
   HeadcountQuery,
   InsightFilters,
+  OutliersQuery,
   SalaryBandsQuery,
   StatsQuery,
   TenureQuery,
@@ -72,4 +76,13 @@ export async function getTenure(query: TenureQuery, role: Role): Promise<TenureS
   const { visible, suppressed } = limitGroupsForRole(bands, role);
 
   return { ...(await metaFor(view, filters)), bands: visible, suppressedGroups: suppressed };
+}
+
+// Outliers are individuals with salaries, so HR only. The route already requires
+// HR_MANAGER; this repeats it so the service is safe if it is ever wired elsewhere.
+export async function getOutliers(query: OutliersQuery, role: Role): Promise<OutlierList> {
+  if (role !== 'HR_MANAGER') throw new ForbiddenError();
+
+  const { limit, ...filters } = query;
+  return repository.getOutliers(filters, limit);
 }

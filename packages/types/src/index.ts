@@ -133,3 +133,9 @@ export interface OutlierRow {
   deviationPct: number;
   groupSize: number;
 }
+
+export interface OutlierList {
+  /** All employees outside their group's fences, before the limit is applied. */
+  total: number;
+  rows: OutlierRow[];
+}

@@ -1,5 +1,5 @@
 import { usdConversionTable } from '@payscope/shared';
-import type { InsightStatsRow, InsightView, TenureBand } from '@payscope/types';
+import type { InsightStatsRow, InsightView, OutlierRow, TenureBand } from '@payscope/types';
 
 import { prisma } from '../../database/prisma.js';
 import { Prisma } from '../../generated/prisma/client.js';
@@ -55,12 +55,17 @@ export function salarySource(view: InsightView): SalarySource {
   };
 }
 
-export function whereClause(filters: InsightFilters): Prisma.Sql {
+function filterConditions(filters: InsightFilters): Prisma.Sql[] {
   const conditions: Prisma.Sql[] = [];
   if (filters.country) conditions.push(Prisma.sql`e."country" = ${filters.country}`);
   if (filters.currency) conditions.push(Prisma.sql`e."currency" = ${filters.currency}`);
   if (filters.department) conditions.push(Prisma.sql`e."department" = ${filters.department}`);
   if (filters.jobTitle) conditions.push(Prisma.sql`e."jobTitle" = ${filters.jobTitle}`);
+  return conditions;
+}
+
+export function whereClause(filters: InsightFilters): Prisma.Sql {
+  const conditions = filterConditions(filters);
   return conditions.length > 0
     ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
     : Prisma.empty;
@@ -196,4 +201,51 @@ export async function countWithoutRate(filters: InsightFilters): Promise<number>
     ${filters.country || filters.currency || filters.department || filters.jobTitle ? Prisma.sql`AND` : Prisma.sql`WHERE`}
     e."currency" <> ALL(${currencies}::text[])`);
   return row?.count ?? 0;
+}
+
+// A group needs at least this many people for quartiles to mean anything.
+export const MIN_OUTLIER_GROUP_SIZE = 8;
+
+// Tukey fences per (country, currency, jobTitle) group: outside Q1 - 1.5 IQR or
+// Q3 + 1.5 IQR. Group statistics are always computed over the whole group; the
+// filters only narrow which outliers are listed.
+export async function getOutliers(
+  filters: InsightFilters,
+  limit: number,
+): Promise<{ total: number; rows: OutlierRow[] }> {
+  const conditions = [
+    Prisma.sql`(e."salary" < s."q1" - 1.5 * (s."q3" - s."q1") OR e."salary" > s."q3" + 1.5 * (s."q3" - s."q1"))`,
+    ...filterConditions(filters),
+  ];
+  const rows = await prisma.$queryRaw<(Omit<OutlierRow, 'deviationPct'> & { total: number })[]>(
+    Prisma.sql`
+    WITH s AS (
+      SELECT e."country", e."currency", e."jobTitle",
+             COUNT(*)::int AS "n",
+             percentile_cont(0.25) WITHIN GROUP (ORDER BY e."salary") AS "q1",
+             percentile_cont(0.5) WITHIN GROUP (ORDER BY e."salary") AS "median",
+             percentile_cont(0.75) WITHIN GROUP (ORDER BY e."salary") AS "q3"
+      FROM "Employee" e
+      GROUP BY e."country", e."currency", e."jobTitle"
+      HAVING COUNT(*) >= ${MIN_OUTLIER_GROUP_SIZE}
+    )
+    SELECT e."id", e."fullName", e."jobTitle", e."country", e."currency", e."employmentType",
+           e."salary", s."median"::float8 AS "groupMedian", s."n" AS "groupSize",
+           COUNT(*) OVER ()::int AS "total"
+    FROM "Employee" e
+    JOIN s ON s."country" = e."country" AND s."currency" = e."currency" AND s."jobTitle" = e."jobTitle"
+    WHERE ${Prisma.join(conditions, ' AND ')}
+    ORDER BY ABS(e."salary" - s."median") / NULLIF(s."median", 0) DESC, e."id"
+    LIMIT ${limit}`,
+  );
+
+  return {
+    total: rows[0]?.total ?? 0,
+    rows: rows.map(({ total: _total, groupMedian, ...row }) => ({
+      ...row,
+      groupMedian: Math.round(groupMedian),
+      deviationPct:
+        groupMedian === 0 ? 0 : Math.round(((row.salary - groupMedian) / groupMedian) * 1000) / 10,
+    })),
+  };
 }

@@ -5,6 +5,7 @@ import { roleOf } from '../../lib/request-role.js';
 
 import type {
   HeadcountQuery,
+  OutliersQuery,
   SalaryBandsQuery,
   StatsQuery,
   TenureQuery,
@@ -62,6 +63,19 @@ export async function tenureHandler(
   try {
     const tenure = await service.getTenure(req.query as unknown as TenureQuery, roleOf(req));
     res.status(200).json(envelope(req, tenure));
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function outliersHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const outliers = await service.getOutliers(req.query as unknown as OutliersQuery, roleOf(req));
+    res.status(200).json(envelope(req, outliers));
   } catch (error) {
     next(error);
   }

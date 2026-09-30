@@ -25,4 +25,11 @@ describe('resolveTestDatabaseUrl', () => {
       expect.objectContaining({ message: expect.not.stringContaining('secret') }),
     );
   });
+
+  it.each([
+    'postgresql://u:p@localhost:5432//payscope_test',
+    'postgresql://u:p@localhost:5432/a/b_test',
+  ])('refuses a malformed database name (%s), such as a stray slash', (url) => {
+    expect(() => resolveTestDatabaseUrl(url)).toThrow(/malformed database name/);
+  });
 });

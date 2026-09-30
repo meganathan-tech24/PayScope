@@ -5,7 +5,12 @@ export function resolveTestDatabaseUrl(candidate: string | undefined): string {
     throw new Error('TEST_DATABASE_URL is not set (see .env.example)');
   }
 
-  const name = new URL(candidate).pathname.replace(/^\//, '');
+  const name = new URL(candidate).pathname.slice(1);
+  if (!/^[\w-]+$/.test(name)) {
+    throw new Error(
+      `TEST_DATABASE_URL has a malformed database name ("${name}"): expected a plain name, check for a stray slash`,
+    );
+  }
   if (!name.endsWith('_test')) {
     throw new Error(
       `Refusing to run integration tests against "${name}": the database name must end in _test`,

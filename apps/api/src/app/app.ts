@@ -13,7 +13,11 @@ export function createApp(): Express {
   const app = express();
 
   app.use(helmet());
-  app.use(cors({ origin: config.CORS_ORIGIN }));
+  // A browser on another origin can only read the file name of a download (the CSV export)
+  // and the request id if the server exposes those headers.
+  app.use(
+    cors({ origin: config.CORS_ORIGIN, exposedHeaders: ['Content-Disposition', 'X-Request-Id'] }),
+  );
   app.use(requestIdMiddleware);
   app.use(createRateLimiter());
   app.use(express.json({ limit: '1mb' }));

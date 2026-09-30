@@ -31,6 +31,16 @@ describe('createApp', () => {
     expect(response.headers['access-control-allow-origin']).toBe('http://localhost:5173');
   });
 
+  it('exposes the download file name and the request id to the browser', async () => {
+    const response = await request(createApp())
+      .get('/api/v1/health')
+      .set('Origin', 'http://localhost:5173');
+
+    expect(response.headers['access-control-expose-headers']).toBe(
+      'Content-Disposition,X-Request-Id',
+    );
+  });
+
   it('sets the X-Request-Id response header', async () => {
     const response = await request(createApp()).get('/does-not-exist');
 

@@ -5,6 +5,7 @@ export {
   type RateCurrency,
 } from './fx-rates.js';
 export { minorUnitExponent } from './minor-units.js';
+export { bandWidth, fixedBandEdges, widenBandWidth, type FixedBands } from './salary-bands.js';
 export { ROLES } from './roles.js';
 export {
   employeeDirectorySchema,

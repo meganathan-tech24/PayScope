@@ -15,10 +15,10 @@ Tick each box as the work lands. The commit history mirrors this list.
 
 ### Product features
 
-- [x] Registration and login with JWT
-- [ ] Employee management: create, view, edit, delete
-- [ ] Server-side search, filter (country, department, job title), sort, and pagination
-- [ ] CSV export (respects current filters)
+- [x] Registration and login with JWT (API; UI in Phase 7)
+- [x] Employee management: create, view, edit, delete (API; UI in Phase 8)
+- [x] Server-side search, filter (country, department, job title), sort, and pagination
+- [x] CSV export (respects current filters) (API; download button in Phase 8)
 - [ ] Pay insights
   - [ ] Min, median, average, max, p25, p75 by country, job title, and department
   - [ ] Headcount distribution and salary bands
@@ -31,7 +31,7 @@ Tick each box as the work lands. The commit history mirrors this list.
 
 - [x] Passwords hashed (bcrypt/Argon2id), never stored or logged in plain text
 - [ ] JWT verification middleware protecting all employee and insights routes
-- [ ] Role-based access: `HR_MANAGER` (full), `VIEWER` (read-only)
+- [x] Role-based access: `HR_MANAGER` (full), `VIEWER` (read-only)
 - [x] Input validation and sanitization (zod) on body, query, and params
 - [x] Rate limiting (stricter on auth routes), helmet, restricted CORS
 - [x] Enumeration-safe login errors

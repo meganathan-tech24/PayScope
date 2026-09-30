@@ -1,8 +1,10 @@
+import { Suspense } from 'react';
 import { NavLink, Outlet } from 'react-router';
 
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { ROLE_LABEL } from '../../features/auth/role-labels';
 import { Button } from '../ui/Button';
+import { Spinner } from '../ui/Spinner';
 
 import { Brand } from './Brand';
 import { NavMenu } from './NavMenu';
@@ -42,7 +44,16 @@ export function AppShell() {
         </div>
       </header>
       <main id="main" className="container-page flex-1 py-8">
-        <Outlet />
+        {/* The signed-in pages (and Recharts) are loaded on demand. */}
+        <Suspense
+          fallback={
+            <div className="flex justify-center py-16 text-neutral-600">
+              <Spinner label="Loading page" />
+            </div>
+          }
+        >
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   );

@@ -41,3 +41,18 @@ export function toMinorUnits(text: string, currency: string): number | null {
 
   return Number(whole) * 10 ** digits + Number(fraction.padEnd(digits, '0') || 0);
 }
+
+/** Short amounts for chart axes and tight spaces: "$85K", "¥15M". Not for exact figures. */
+export function formatMoneyCompact(minorUnits: number, currency: string, locale = 'en'): string {
+  const amount = minorUnits / 10 ** currencyDigits(currency);
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(amount);
+  } catch {
+    return `${currency} ${Math.round(amount)}`;
+  }
+}

@@ -102,18 +102,14 @@ describe('AppRoutes, signed-in area', () => {
     expect(screen.getByRole('link', { name: 'Dashboard' })).not.toHaveAttribute('aria-current');
   });
 
-  it('has a visible Log out that ends the session and returns to the home page', async () => {
+  it('has a visible Log out that ends the session and returns to the sign-in page', async () => {
     signedInAs('HR_MANAGER');
     renderAt(<AppRoutes />, '/app');
 
     await userEvent.click(await screen.findByRole('button', { name: 'Log out' }));
 
-    expect(
-      await within(screen.getByRole('banner')).findByRole('link', {
-        name: 'Sign in',
-        hidden: true,
-      }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Sign in' })).toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
     expect(window.localStorage.getItem(TOKEN_KEY)).toBeNull();
   });
 });

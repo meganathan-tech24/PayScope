@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from 'react-router';
+import { NavLink, Outlet } from 'react-router';
 
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { ROLE_LABEL } from '../../features/auth/role-labels';
@@ -7,15 +7,10 @@ import { Button } from '../ui/Button';
 import { Brand } from './Brand';
 import { NavMenu } from './NavMenu';
 
-// Signed-in layout: role-aware navigation, who you are, and a visible Logout.
+// Signed-in layout: role-aware navigation, who you are, and a visible Log out. Logging
+// out ends the session, and ProtectedRoute then moves the visitor to /login.
 export function AppShell() {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
-
-  function handleLogout() {
-    logout();
-    navigate('/', { replace: true });
-  }
 
   return (
     <div className="flex min-h-screen flex-col bg-neutral-50">
@@ -39,7 +34,7 @@ export function AppShell() {
                   <span className="badge-brand">{ROLE_LABEL[user.role]}</span>
                 </p>
               ) : null}
-              <Button variant="secondary" onClick={handleLogout}>
+              <Button variant="secondary" onClick={logout}>
                 Log out
               </Button>
             </div>

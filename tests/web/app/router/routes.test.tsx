@@ -1,0 +1,107 @@
+import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it } from 'vitest';
+
+import { apiSuccess, stubFetch } from '@tests/helpers/fetch-mock.js';
+import { renderAt } from '@tests/helpers/render.js';
+import { AppRoutes } from '@web/app/router/routes';
+import { TOKEN_KEY } from '@web/features/auth/services/token-storage';
+
+function signedInAs(role: 'HR_MANAGER' | 'VIEWER', name = 'Ada Lovelace') {
+  window.localStorage.setItem(TOKEN_KEY, 'valid.token.value');
+  stubFetch(() => apiSuccess({ id: 'u1', name, email: 'ada@example.com', role }));
+}
+
+describe('AppRoutes, public pages', () => {
+  it('serves the landing page at /', async () => {
+    stubFetch(() => apiSuccess({}));
+
+    renderAt(<AppRoutes />, '/');
+
+    expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('main')).toBeInTheDocument();
+  });
+
+  it('shows the 404 page for an unknown address, with a way home', async () => {
+    stubFetch(() => apiSuccess({}));
+
+    renderAt(<AppRoutes />, '/no/such/page');
+
+    expect(
+      await screen.findByRole('heading', { name: /could not find that page/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /home page/i })).toHaveAttribute('href', '/');
+  });
+
+  it('shows the 403 page at /403', async () => {
+    stubFetch(() => apiSuccess({}));
+
+    renderAt(<AppRoutes />, '/403');
+
+    expect(await screen.findByRole('heading', { name: /do not have access/i })).toBeInTheDocument();
+  });
+
+  it('offers Sign in and Create account to a visitor, and Open app to a signed-in user', async () => {
+    stubFetch(() => apiSuccess({}));
+    const { unmount } = renderAt(<AppRoutes />, '/');
+    expect(await screen.findByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login');
+    expect(screen.getByRole('link', { name: 'Create account' })).toHaveAttribute(
+      'href',
+      '/register',
+    );
+    unmount();
+
+    signedInAs('VIEWER');
+    renderAt(<AppRoutes />, '/');
+
+    expect(await screen.findByRole('link', { name: 'Open app' })).toHaveAttribute('href', '/app');
+    expect(screen.queryByRole('link', { name: 'Sign in' })).not.toBeInTheDocument();
+  });
+});
+
+describe('AppRoutes, signed-in area', () => {
+  it('sends a signed-out visitor from /app to the login page', async () => {
+    stubFetch(() => apiSuccess({}));
+
+    renderAt(<AppRoutes />, '/app');
+
+    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
+  });
+
+  it.each([
+    ['HR_MANAGER', 'HR Manager', /individual salaries/i],
+    ['VIEWER', 'Viewer', /never shown to your account/i],
+  ] as const)(
+    'shows a %s their name, role and what that role can do',
+    async (role, label, text) => {
+      signedInAs(role);
+
+      renderAt(<AppRoutes />, '/app');
+
+      expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
+      expect(screen.getAllByText('Ada Lovelace').length).toBeGreaterThan(0);
+      expect(screen.getAllByText(label).length).toBeGreaterThan(0);
+      expect(screen.getByText(text)).toBeInTheDocument();
+    },
+  );
+
+  it('serves /app/employees inside the app shell, with navigation and the current page marked', async () => {
+    signedInAs('VIEWER');
+
+    renderAt(<AppRoutes />, '/app/employees');
+
+    expect(await screen.findByRole('heading', { name: 'Employees' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Employees' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Dashboard' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('has a visible Log out that ends the session and returns to the home page', async () => {
+    signedInAs('HR_MANAGER');
+    renderAt(<AppRoutes />, '/app');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Log out' }));
+
+    expect(await screen.findByRole('link', { name: 'Sign in' })).toBeInTheDocument();
+    expect(window.localStorage.getItem(TOKEN_KEY)).toBeNull();
+  });
+});

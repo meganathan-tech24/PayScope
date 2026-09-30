@@ -1,30 +1,44 @@
 import { BrowserRouter, Route, Routes } from 'react-router';
 
 import { AppShell } from '../../components/layout/AppShell';
-import { Button } from '../../components/ui/Button';
-import { Card } from '../../components/ui/Card';
+import { PublicLayout } from '../../components/layout/PublicLayout';
+import { ProtectedRoute } from '../../features/auth/components/ProtectedRoute';
+import { PublicOnlyRoute } from '../../features/auth/components/PublicOnlyRoute';
+import { DashboardPage } from '../../pages/DashboardPage';
+import { EmployeesPage } from '../../pages/EmployeesPage';
+import { ForbiddenPage } from '../../pages/ForbiddenPage';
+import { LandingPage } from '../../pages/LandingPage';
+import { LoginPage } from '../../pages/LoginPage';
+import { NotFoundPage } from '../../pages/NotFoundPage';
+import { RegisterPage } from '../../pages/RegisterPage';
 
-function HomePlaceholder() {
+// The route table alone, so tests can render it inside a MemoryRouter.
+export function AppRoutes() {
   return (
-    <Card>
-      <p className="text-neutral-600">Employee management and pay insights land in later phases.</p>
-      <div className="mt-4">
-        <Button variant="primary" disabled title="Coming in a later phase">
-          Add employee
-        </Button>
-      </div>
-    </Card>
+    <Routes>
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<LandingPage />} />
+        <Route element={<PublicOnlyRoute />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+        </Route>
+        <Route path="/403" element={<ForbiddenPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
+      <Route path="/app" element={<ProtectedRoute />}>
+        <Route element={<AppShell />}>
+          <Route index element={<DashboardPage />} />
+          <Route path="employees" element={<EmployeesPage />} />
+        </Route>
+      </Route>
+    </Routes>
   );
 }
 
 export function AppRouter() {
   return (
     <BrowserRouter>
-      <AppShell>
-        <Routes>
-          <Route path="/" element={<HomePlaceholder />} />
-        </Routes>
-      </AppShell>
+      <AppRoutes />
     </BrowserRouter>
   );
 }

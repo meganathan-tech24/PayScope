@@ -38,7 +38,11 @@ export interface HttpClient {
   put<T>(path: string, body?: unknown): Promise<T>;
   delete(path: string): Promise<void>;
   /** A file the server sends as a body (for example a CSV), with the name it suggests. */
-  download(path: string, accept: string): Promise<{ blob: Blob; filename: string }>;
+  download(
+    path: string,
+    accept: string,
+    fallbackName?: string,
+  ): Promise<{ blob: Blob; filename: string }>;
 }
 
 /** Appends a query string, leaving out undefined, null and empty values. */
@@ -122,10 +126,10 @@ export function createHttpClient(options: HttpClientOptions): HttpClient {
     delete: async (path) => {
       await send('DELETE', path);
     },
-    download: async (path, accept) => {
+    download: async (path, accept, fallbackName = 'download') => {
       const response = await send('GET', path, undefined, accept);
       const disposition = response.headers.get('Content-Disposition') ?? '';
-      const filename = /filename="?([^";]+)"?/i.exec(disposition)?.[1] ?? 'download';
+      const filename = /filename="?([^";]+)"?/i.exec(disposition)?.[1] ?? fallbackName;
       return { blob: await response.blob(), filename };
     },
   };

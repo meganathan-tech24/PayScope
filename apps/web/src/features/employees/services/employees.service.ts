@@ -29,5 +29,9 @@ export const employeesService = {
   remove: (id: string) => apiClient.delete(`/employees/${id}`),
   // The export follows the same filters and sort as the list, without paging.
   exportCsv: (params: EmployeeListParams) =>
-    apiClient.download(withQuery('/employees/export.csv', filters(params)), 'text/csv'),
+    apiClient.download(
+      withQuery('/employees/export.csv', filters(params)),
+      'text/csv',
+      'employees.csv',
+    ),
 };

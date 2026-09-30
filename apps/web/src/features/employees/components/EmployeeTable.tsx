@@ -52,7 +52,7 @@ export function EmployeeTable({
 }: EmployeeTableProps) {
   return (
     <div
-      className="hidden overflow-x-auto rounded-lg border border-neutral-200 bg-white md:block"
+      className="relative hidden overflow-x-auto rounded-lg border border-neutral-200 bg-white md:block"
       aria-busy={busy}
     >
       <table className="table" aria-label="Employees">
@@ -91,7 +91,9 @@ export function EmployeeTable({
               <td className="px-4 py-3">{employee.jobTitle}</td>
               <td className="px-4 py-3">{employee.department}</td>
               <td className="px-4 py-3">{countryName(employee.country)}</td>
-              <td className="px-4 py-3">{employmentTypeLabel(employee.employmentType)}</td>
+              <td className="whitespace-nowrap px-4 py-3">
+                {employmentTypeLabel(employee.employmentType)}
+              </td>
               <td className="whitespace-nowrap px-4 py-3">{formatDate(employee.hireDate)}</td>
               {showSalary ? (
                 <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">

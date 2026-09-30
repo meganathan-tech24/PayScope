@@ -165,10 +165,13 @@ describe('http client, paging, writes and downloads', () => {
     expect(calls[0]?.headers.get('Accept')).toBe('text/csv');
   });
 
-  it('names a download "download" when the server suggests nothing', async () => {
+  it('names a download "download" when the server suggests nothing, or the given fallback', async () => {
     stubFetch(() => new Response('x', { status: 200 }));
 
     expect((await build().client.download('/x', 'text/csv')).filename).toBe('download');
+    expect((await build().client.download('/x', 'text/csv', 'employees.csv')).filename).toBe(
+      'employees.csv',
+    );
   });
 
   it('applies the 401 rule to downloads and writes too', async () => {

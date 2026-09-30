@@ -1,7 +1,7 @@
 import { prisma } from '../../database/prisma.js';
 import { Prisma } from '../../generated/prisma/client.js';
 
-import type { InsightFilters } from './insights.schema.js';
+import type { HEADCOUNT_BY, InsightFilters } from './insights.schema.js';
 
 // Raw SQL is parameterised: values are always bound parameters. The only
 // interpolated fragments are these fixed identifiers, chosen from a whitelist by
@@ -68,4 +68,56 @@ export async function getStats(
     p75: Math.round(row.p75),
     max: Math.round(row.max),
   }));
+}
+
+const HEADCOUNT_COLUMN: Record<(typeof HEADCOUNT_BY)[number], Prisma.Sql> = {
+  country: GROUP_COLUMN.country,
+  jobTitle: GROUP_COLUMN.jobTitle,
+  department: GROUP_COLUMN.department,
+  employmentType: Prisma.raw('e."employmentType"::text'),
+};
+
+export function getHeadcount(
+  by: (typeof HEADCOUNT_BY)[number],
+  filters: InsightFilters,
+): Promise<{ key: string; headcount: number }[]> {
+  const column = HEADCOUNT_COLUMN[by];
+  return prisma.$queryRaw(Prisma.sql`
+    SELECT ${column} AS "key", COUNT(*)::int AS "headcount"
+    FROM "Employee" e
+    ${whereClause(filters)}
+    GROUP BY ${column}
+    ORDER BY "headcount" DESC, "key"`);
+}
+
+export async function getSalaryRange(
+  filters: InsightFilters,
+): Promise<{ headcount: number; min: number; max: number }> {
+  const [row] = await prisma.$queryRaw<
+    { headcount: number; min: number | null; max: number | null }[]
+  >(
+    Prisma.sql`
+      SELECT COUNT(*)::int AS "headcount",
+             MIN(e."salary")::float8 AS "min",
+             MAX(e."salary")::float8 AS "max"
+      FROM "Employee" e
+      ${whereClause(filters)}`,
+  );
+  return { headcount: row?.headcount ?? 0, min: row?.min ?? 0, max: row?.max ?? 0 };
+}
+
+// Counts per equal-width bucket over [min, max + 1); the +1 puts the maximum in the last bucket.
+export async function getBucketCounts(
+  filters: InsightFilters,
+  min: number,
+  max: number,
+  buckets: number,
+): Promise<Map<number, number>> {
+  const rows = await prisma.$queryRaw<{ bucket: number; count: number }[]>(Prisma.sql`
+    SELECT width_bucket(e."salary"::float8, ${min}::float8, ${max + 1}::float8, ${buckets}::int) AS "bucket",
+           COUNT(*)::int AS "count"
+    FROM "Employee" e
+    ${whereClause(filters)}
+    GROUP BY 1`);
+  return new Map(rows.map((row) => [row.bucket, row.count]));
 }

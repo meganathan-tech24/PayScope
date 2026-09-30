@@ -266,6 +266,12 @@ importers:
 
   apps/web:
     dependencies:
+      '@payscope/shared':
+        specifier: workspace:^
+        version: link:../../packages/shared
+      '@payscope/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@tanstack/react-query':
         specifier: ^5.104.0
         version: 5.104.0(react@19.3.0)

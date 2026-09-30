@@ -11,6 +11,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@payscope/shared": "workspace:^",
+    "@payscope/types": "workspace:*",
     "@tanstack/react-query": "^5.104.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",

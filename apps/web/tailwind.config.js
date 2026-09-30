@@ -28,6 +28,16 @@ export default {
           800: '#1f2937',
           900: '#111827',
         },
+        // Deep blue-black for hero and footer surfaces, with a warm amber accent.
+        ink: {
+          DEFAULT: '#0b1c2c',
+          800: '#12283b',
+          700: '#1b3a52',
+          600: '#2a506c',
+          300: '#9db4c8',
+          100: '#dbe6ef',
+        },
+        signal: { DEFAULT: '#f5b83d', 600: '#d99a14', 100: '#fdf1d1' },
         success: { DEFAULT: '#16a34a', light: '#dcfce7' },
         warning: { DEFAULT: '#d97706', light: '#fef3c7' },
         danger: { DEFAULT: '#dc2626', light: '#fee2e2' },
@@ -35,6 +45,7 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['ui-serif', 'Georgia', 'Cambria', 'Times New Roman', 'serif'],
       },
       fontSize: {
         xs: ['0.75rem', { lineHeight: '1rem' }],
@@ -43,6 +54,10 @@ export default {
         lg: ['1.125rem', { lineHeight: '1.75rem' }],
         xl: ['1.25rem', { lineHeight: '1.75rem' }],
         '2xl': ['1.5rem', { lineHeight: '2rem' }],
+        '3xl': ['1.875rem', { lineHeight: '2.25rem' }],
+        '4xl': ['2.25rem', { lineHeight: '2.5rem' }],
+        '5xl': ['3rem', { lineHeight: '1.05' }],
+        '6xl': ['3.75rem', { lineHeight: '1' }],
       },
       borderRadius: {
         sm: '0.25rem',

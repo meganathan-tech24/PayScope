@@ -13,3 +13,8 @@ export function isIsoCountryCode(code: string): boolean {
 export function isIsoCurrencyCode(code: string): boolean {
   return ALPHA_3.test(code) && CURRENCY_CODES.has(code);
 }
+
+// Every ISO 3166-1 alpha-2 code, sorted, for country pickers.
+export function listCountryCodes(): string[] {
+  return Object.keys(countries.getAlpha2Codes()).sort();
+}

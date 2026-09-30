@@ -12,7 +12,13 @@ export {
   insightStatsRowBasicSchema,
   insightStatsRowSchema,
 } from './employee-schemas.js';
-export { isIsoCountryCode, isIsoCurrencyCode } from './iso-codes.js';
+export { isIsoCountryCode, isIsoCurrencyCode, listCountryCodes } from './iso-codes.js';
+export {
+  EMPLOYMENT_TYPES,
+  employeeBodySchema,
+  MAX_SALARY_MINOR_UNITS,
+  type EmployeeInput,
+} from './employee.js';
 
 export const DEFAULT_PAGE_SIZE = 25;
 export const MAX_PAGE_SIZE = 100;

@@ -12,11 +12,11 @@ let app: Express;
 beforeEach(async () => {
   app = createApp();
   const gb = { country: 'GB', currency: 'GBP', jobTitle: 'Engineer' };
-  // Hand-checked: sorted 1000, 5000..5700 (step 100), 9000 -> Q1 5125, median 5350,
+  // Hand-checked (all full-time): sorted 1000, 5000..5700 (step 100), 9000 -> Q1 5125, median 5350,
   // Q3 5675, IQR 550, fences 4300 and 6500, so 1000 and 9000 are the outliers.
   await seedEmployees([
     ...withSalaries(gb, [5000, 5100, 5200, 5300, 5400, 5500, 5600, 5700]),
-    { ...gb, salary: 9000, fullName: 'Outlier High', employmentType: 'CONTRACT' },
+    { ...gb, salary: 9000, fullName: 'Outlier High' },
     { ...gb, salary: 1000, fullName: 'Outlier Low' },
     // A tight group in another currency, with no outlier.
     ...withSalaries(
@@ -63,7 +63,7 @@ describe('GET /insights/outliers (integration)', () => {
         jobTitle: 'Engineer',
         country: 'GB',
         currency: 'GBP',
-        employmentType: 'CONTRACT',
+        employmentType: 'FULL_TIME',
         salary: 9000,
         groupMedian: 5350,
         deviationPct: 68.2,
@@ -112,5 +112,64 @@ describe('GET /insights/outliers (integration)', () => {
 
   it('is forbidden for a VIEWER whatever the parameters, even invalid ones', async () => {
     expect((await get({ limit: 0 }, viewerAuth)).status).toBe(403);
+  });
+
+  describe('like-for-like by employment type', () => {
+    const eight = [0, 100, 200, 300, 400, 500, 600, 700];
+    const ca = { country: 'CA', currency: 'CAD', jobTitle: 'Engineer' };
+
+    beforeEach(async () => {
+      await seedEmployees([
+        ...withSalaries(
+          ca,
+          eight.map((n) => 8000 + n),
+        ),
+        ...withSalaries(
+          { ...ca, employmentType: 'INTERN' },
+          eight.map((n) => 3000 + n),
+        ),
+      ]);
+    });
+
+    it('does not flag interns for being paid well below the job-title median', async () => {
+      const response = await get({ country: 'CA' });
+
+      expect(response.body.data).toEqual({ total: 0, rows: [] });
+    });
+
+    it('flags a real outlier inside its own employment-type group', async () => {
+      await seedEmployees([
+        { ...ca, employmentType: 'INTERN', salary: 9000, fullName: 'Overpaid Intern' },
+      ]);
+
+      const response = await get({ country: 'CA' });
+
+      expect(response.body.data.total).toBe(1);
+      expect(response.body.data.rows[0]).toMatchObject({
+        fullName: 'Overpaid Intern',
+        employmentType: 'INTERN',
+        salary: 9000,
+        groupMedian: 3400,
+        deviationPct: 164.7,
+        groupSize: 9,
+      });
+    });
+
+    it('skips an employment-type group under 8 people, however extreme its salaries', async () => {
+      await seedEmployees([
+        ...withSalaries(
+          { ...ca, country: 'FR', currency: 'EUR' },
+          eight.map((n) => 8000 + n),
+        ),
+        ...withSalaries(
+          { ...ca, country: 'FR', currency: 'EUR', employmentType: 'PART_TIME' },
+          [100, 100, 100, 100, 100, 100, 900000],
+        ),
+      ]);
+
+      const response = await get({ country: 'FR' });
+
+      expect(response.body.data).toEqual({ total: 0, rows: [] });
+    });
   });
 });

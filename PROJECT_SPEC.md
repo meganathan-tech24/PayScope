@@ -460,7 +460,7 @@ Field-level filtering happens **in the service layer**, through one serializer, 
 - `headcount?by=country|department|jobTitle|employmentType`: headcount distribution (no salary data)
 - `salary-bands?currency=XXX&buckets=10` (or `view=usd`): equal-width salary histogram
 - `tenure`: headcount, median and average pay by tenure band (`<1y`, `1-3y`, `3-5y`, `5-10y`, `10y+`)
-- `outliers?limit=50`: employees outside the Tukey fences of their country, currency and job-title group (groups of at least 8); **`HR_MANAGER` only**, 403 for `VIEWER`
+- `outliers?limit=50`: employees outside the Tukey fences of their like-for-like group (same country, currency, job title and employment type; groups of at least 8, smaller groups are never flagged); **`HR_MANAGER` only**, 403 for `VIEWER`
 - `view=usd`: optional org-wide normalization from a static, documented rate table; results are US cents, labelled `approximate`, and report employees with no rate instead of dropping them
 - For a `VIEWER`, groups (and salary-band sets) with fewer than 5 employees are suppressed, with a count of what was hidden, because a statistic over one person is that person's salary
 

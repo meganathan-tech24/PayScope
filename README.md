@@ -28,7 +28,7 @@ Tick each box as the work lands. The commit history mirrors this list.
   - [x] Min, median, average, max, p25, p75 by country, job title, and department
   - [x] Headcount distribution and salary bands
   - [x] Pay vs tenure summary
-  - [x] Outlier detection (vs the job-title group within a country; HR only)
+  - [x] Outlier detection (like-for-like: same country, currency, job title and employment type; HR only)
   - [x] Optional USD-normalized view (static rate table, labeled approximate)
 - [x] Seed script with exactly 10,000 realistic employees across multiple countries
 
@@ -219,7 +219,7 @@ Responses use a consistent envelope with a `requestId` for tracing:
 
 - **Currency:** salaries are stored in local currency as integer minor units and never silently mixed. Insights are per currency by default.
 - **Auth:** short-lived JWT, stateless. Server-side revocation is documented as a future step.
-- **Insights:** per-currency by default; the USD view is approximate and labelled. Outliers use Tukey fences within country, currency and job title. Measurements and the open outlier trade-off are in `docs/design-notes.md`.
+- **Insights:** per-currency by default; the USD view is approximate and labelled. Outliers use Tukey fences within country, currency, job title and employment type. Measurements and the open outlier trade-off are in `docs/design-notes.md`.
 - **Roles:** the API filters salary out for `VIEWER` (allowlisted shape, role-aware CSV, salary sort rejected), so the UI cannot leak it. New users default to `VIEWER` (least privilege).
 - **Logging:** async database writes with a console fallback, so logging never fails a request.
 - **Scope:** payroll, tax, bonuses, approval workflows, and live FX rates are intentionally out of scope.

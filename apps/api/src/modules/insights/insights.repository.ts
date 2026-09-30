@@ -203,12 +203,14 @@ export async function countWithoutRate(filters: InsightFilters): Promise<number>
   return row?.count ?? 0;
 }
 
-// A group needs at least this many people for quartiles to mean anything.
+// A group needs at least this many people for quartiles to mean anything; smaller
+// groups are never flagged.
 export const MIN_OUTLIER_GROUP_SIZE = 8;
 
-// Tukey fences per (country, currency, jobTitle) group: outside Q1 - 1.5 IQR or
-// Q3 + 1.5 IQR. Group statistics are always computed over the whole group; the
-// filters only narrow which outliers are listed.
+// Tukey fences per like-for-like group (country, currency, job title and employment
+// type): outside Q1 - 1.5 IQR or Q3 + 1.5 IQR. Interns and part-timers are paid
+// differently on purpose, so they are compared with their own kind. Group statistics
+// use the whole group; the filters only narrow which outliers are listed.
 export async function getOutliers(
   filters: InsightFilters,
   limit: number,
@@ -220,20 +222,21 @@ export async function getOutliers(
   const rows = await prisma.$queryRaw<(Omit<OutlierRow, 'deviationPct'> & { total: number })[]>(
     Prisma.sql`
     WITH s AS (
-      SELECT e."country", e."currency", e."jobTitle",
+      SELECT e."country", e."currency", e."jobTitle", e."employmentType",
              COUNT(*)::int AS "n",
              percentile_cont(0.25) WITHIN GROUP (ORDER BY e."salary") AS "q1",
              percentile_cont(0.5) WITHIN GROUP (ORDER BY e."salary") AS "median",
              percentile_cont(0.75) WITHIN GROUP (ORDER BY e."salary") AS "q3"
       FROM "Employee" e
-      GROUP BY e."country", e."currency", e."jobTitle"
+      GROUP BY e."country", e."currency", e."jobTitle", e."employmentType"
       HAVING COUNT(*) >= ${MIN_OUTLIER_GROUP_SIZE}
     )
     SELECT e."id", e."fullName", e."jobTitle", e."country", e."currency", e."employmentType",
            e."salary", s."median"::float8 AS "groupMedian", s."n" AS "groupSize",
            COUNT(*) OVER ()::int AS "total"
     FROM "Employee" e
-    JOIN s ON s."country" = e."country" AND s."currency" = e."currency" AND s."jobTitle" = e."jobTitle"
+    JOIN s ON s."country" = e."country" AND s."currency" = e."currency"
+         AND s."jobTitle" = e."jobTitle" AND s."employmentType" = e."employmentType"
     WHERE ${Prisma.join(conditions, ' AND ')}
     ORDER BY ABS(e."salary" - s."median") / NULLIF(s."median", 0) DESC, e."id"
     LIMIT ${limit}`,

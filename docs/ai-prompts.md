@@ -99,3 +99,10 @@ Key prompts and instructions given to the AI coding tool, and the decisions that
 - **What I changed or rejected, and why:** Approved as proposed. During the build: edges of salary buckets are rounded up so they match integer salaries exactly; the USD view reports employees without a rate instead of dropping them; test fixtures avoid SQL-looking strings; a flaky assertion (searching a body that contains a random request id) was replaced with one on `data`. Measurements on the seed showed the outlier baseline flags most interns; recorded in design-notes as a decision for the user rather than changed silently.
 - **Outcome:** Seven commits. Typecheck, lint (0 errors, the one known warning), format, unit and integration tests pass. Counts: unit 221 to 260, integration 112 to 165. Every endpoint answers in about 5 to 20 ms on 10,000 rows.
 
+---
+
+## Phase 6 follow-up 1: like-for-like outliers
+- **Prompt / instruction:** Group outliers by country, currency, job title and employment type, keep the minimum group size, document the original baseline as rejected with the 483 vs 176 numbers, add tests, re-measure.
+- **What the AI proposed:** Add employment type to the group in the outlier SQL, make the seeded high outlier full-time so the existing hand-checked dataset still holds, and add three tests (interns paid below the title median are not flagged, a real outlier inside its own group is flagged, a small group is never flagged).
+- **Outcome:** On the seed 176 employees are flagged across 233 groups (was 483); 19 ms HTTP. Integration tests 165 to 168.
+

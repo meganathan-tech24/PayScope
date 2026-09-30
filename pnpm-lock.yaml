@@ -457,6 +457,9 @@ importers:
       react-dom:
         specifier: 19.3.0
         version: 19.3.0(react@19.3.0)
+      react-router:
+        specifier: ^8.4.0
+        version: 8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       supertest:
         specifier: ^7.0.0
         version: 7.3.0(supports-color@7.2.0)

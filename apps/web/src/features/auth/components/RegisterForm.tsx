@@ -130,9 +130,9 @@ export function RegisterForm() {
         {register.isPending ? 'Creating account…' : 'Create account'}
       </Button>
 
-      <p className="text-sm text-neutral-600">
-        Already have an account?{' '}
-        <Link to="/login" className="link">
+      <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-neutral-600">
+        Already have an account?
+        <Link to="/login" className="link inline-flex min-h-11 items-center">
           Sign in
         </Link>
       </p>

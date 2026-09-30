@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 
@@ -41,11 +41,15 @@ describe('AppRoutes, public pages', () => {
     expect(await screen.findByRole('heading', { name: /do not have access/i })).toBeInTheDocument();
   });
 
-  it('offers Sign in and Create account to a visitor, and Open app to a signed-in user', async () => {
+  it('offers Sign in and Create account in the header to a visitor, and Open app to a signed-in user', async () => {
     stubFetch(() => apiSuccess({}));
     const { unmount } = renderAt(<AppRoutes />, '/');
-    expect(await screen.findByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login');
-    expect(screen.getByRole('link', { name: 'Create account' })).toHaveAttribute(
+    const header = () => within(screen.getByRole('banner', { hidden: true }));
+    expect(await header().findByRole('link', { name: 'Sign in', hidden: true })).toHaveAttribute(
+      'href',
+      '/login',
+    );
+    expect(header().getByRole('link', { name: 'Create account', hidden: true })).toHaveAttribute(
       'href',
       '/register',
     );
@@ -54,8 +58,11 @@ describe('AppRoutes, public pages', () => {
     signedInAs('VIEWER');
     renderAt(<AppRoutes />, '/');
 
-    expect(await screen.findByRole('link', { name: 'Open app' })).toHaveAttribute('href', '/app');
-    expect(screen.queryByRole('link', { name: 'Sign in' })).not.toBeInTheDocument();
+    expect(await header().findByRole('link', { name: 'Open app', hidden: true })).toHaveAttribute(
+      'href',
+      '/app',
+    );
+    expect(header().queryByRole('link', { name: 'Sign in', hidden: true })).not.toBeInTheDocument();
   });
 });
 
@@ -101,7 +108,12 @@ describe('AppRoutes, signed-in area', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Log out' }));
 
-    expect(await screen.findByRole('link', { name: 'Sign in' })).toBeInTheDocument();
+    expect(
+      await within(screen.getByRole('banner')).findByRole('link', {
+        name: 'Sign in',
+        hidden: true,
+      }),
+    ).toBeInTheDocument();
     expect(window.localStorage.getItem(TOKEN_KEY)).toBeNull();
   });
 });

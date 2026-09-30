@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router';
+import { NavLink, Outlet, useLocation } from 'react-router';
 
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { buttonClass } from '../ui/button-styles';
@@ -9,6 +9,7 @@ import { NavMenu } from './NavMenu';
 // Header and footer for the public pages (landing, login, register, 403, 404).
 export function PublicLayout() {
   const { status } = useAuth();
+  const onLanding = useLocation().pathname === '/';
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -19,6 +20,19 @@ export function PublicLayout() {
         <div className="container-page flex items-center justify-between py-2">
           <Brand />
           <NavMenu label="main menu">
+            {onLanding ? (
+              <>
+                <a href="#features" className="nav-link">
+                  Features
+                </a>
+                <a href="#how-it-works" className="nav-link">
+                  How it works
+                </a>
+                <a href="#roles" className="nav-link">
+                  Who sees what
+                </a>
+              </>
+            ) : null}
             {status === 'authenticated' ? (
               <NavLink to="/app" className={buttonClass('primary')}>
                 Open app

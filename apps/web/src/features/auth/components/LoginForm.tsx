@@ -80,9 +80,9 @@ export function LoginForm() {
         {login.isPending ? 'Signing in…' : 'Sign in'}
       </Button>
 
-      <p className="text-sm text-neutral-600">
-        New to PayScope?{' '}
-        <Link to="/register" className="link">
+      <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-neutral-600">
+        New to PayScope?
+        <Link to="/register" className="link inline-flex min-h-11 items-center">
           Create an account
         </Link>
       </p>

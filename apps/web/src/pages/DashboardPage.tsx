@@ -2,7 +2,9 @@ import { Alert } from '../components/ui/Alert';
 import { EmptyState } from '../components/ui/StateMessages';
 import { useAuth } from '../features/auth/hooks/useAuth';
 import { CurrencyControls } from '../features/insights/components/CurrencyControls';
-import { ApproximateNote, HiddenGroupsNote } from '../features/insights/components/InsightNotes';
+import { HeadcountSection } from '../features/insights/components/HeadcountSection';
+import { ApproximateNote } from '../features/insights/components/InsightNotes';
+import { PayByGroupSection } from '../features/insights/components/PayByGroupSection';
 import { SectionError, SectionSkeleton } from '../features/insights/components/SectionStates';
 import { SummaryCards } from '../features/insights/components/SummaryCards';
 import { useCountryStats, useHeadcount, useOutliers } from '../features/insights/hooks/useInsights';
@@ -66,9 +68,6 @@ export function DashboardPage() {
           {params.usd ? (
             <ApproximateNote excludedHeadcount={activeStats.data?.excludedHeadcount} />
           ) : null}
-          {!params.usd || activeStats.data ? (
-            <HiddenGroupsNote count={activeStats.data?.suppressedGroups ?? 0} />
-          ) : null}
 
           {activeStats.isError ? (
             <SectionError what="the summary" onRetry={() => void activeStats.refetch()} />
@@ -82,6 +81,17 @@ export function DashboardPage() {
               outliers={isHr ? outliers.data?.total : undefined}
             />
           )}
+
+          <PayByGroupSection
+            payBy={params.payBy}
+            onPayBy={(payBy) => update({ payBy })}
+            usd={params.usd}
+            currency={currency}
+          />
+          <HeadcountSection
+            by={params.headcountBy}
+            onBy={(headcountBy) => update({ headcountBy })}
+          />
         </>
       )}
     </div>

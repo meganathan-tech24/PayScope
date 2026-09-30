@@ -47,6 +47,9 @@ export default defineConfig({
           include: ['web/**/*.test.{ts,tsx}'],
           setupFiles: ['./web/setup/setup.ts'],
           globals: true,
+          // Form tests type into many fields with userEvent and pages load lazily; under a
+          // full parallel run that can pass the 5 s default and fail a correct test.
+          testTimeout: 15_000,
         },
       },
       {

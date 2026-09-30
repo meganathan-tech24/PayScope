@@ -9,6 +9,7 @@ import {
   SectionError,
   SectionSkeleton,
 } from '@web/features/insights/components/SectionStates';
+import { axisStart } from '@web/features/insights/lib/labels';
 import { formatMoneyCompact } from '@web/lib/money';
 
 describe('ChartCard', () => {
@@ -104,5 +105,17 @@ describe('formatMoneyCompact', () => {
 
   it('falls back for an unusable currency code', () => {
     expect(formatMoneyCompact(12_345, 'X')).toBe('X 123');
+  });
+});
+
+describe('axisStart', () => {
+  it('starts a little below the lowest 25th percentile, rounded down to two figures', () => {
+    expect(axisStart(8_000_000)).toBe(6_400_000);
+    expect(axisStart(1_234_567)).toBe(980_000);
+  });
+
+  it('starts at zero when there is nothing to base it on', () => {
+    expect(axisStart(0)).toBe(0);
+    expect(axisStart(-5)).toBe(0);
   });
 });

@@ -214,3 +214,53 @@ describe('streamEmployees (integration)', () => {
     expect(batches).toEqual([]);
   });
 });
+
+describe('GET /employees/export.csv by role (integration)', () => {
+  const VIEWER_HEADER =
+    'id,fullName,email,jobTitle,department,country,currency,employmentType,hireDate';
+
+  it('gives a VIEWER no salary column: not in the header, not in any row', async () => {
+    await seed({ salary: 7_654_321 });
+    await seed({ salary: 1_234_567 });
+
+    const response = await download({}, viewer);
+    const rows = lines(response.body);
+
+    expect(response.status).toBe(200);
+    expect(rows[0]).toBe(VIEWER_HEADER);
+    expect(rows).toHaveLength(3);
+    expect(response.body).not.toContain('salary');
+    expect(response.body).not.toContain('7654321');
+    expect(response.body).not.toContain('1234567');
+    for (const row of rows) expect(row.split(',')).toHaveLength(VIEWER_HEADER.split(',').length);
+  });
+
+  it('exports the same rows to a VIEWER as to an HR_MANAGER, in the same order', async () => {
+    await seed();
+    await seed();
+    const idsOf = (body: unknown) =>
+      lines(body)
+        .slice(1)
+        .map((row) => row.split(',')[0]);
+
+    const forViewer = await download({ sortBy: 'email', sortDir: 'desc' }, viewer);
+    const forHr = await download({ sortBy: 'email', sortDir: 'desc' }, hr);
+
+    expect(idsOf(forViewer.body)).toEqual(idsOf(forHr.body));
+  });
+
+  it('still gives an HR_MANAGER the salary column and values', async () => {
+    await seed({ salary: 7_654_321 });
+
+    const rows = lines((await download({}, hr)).body);
+
+    expect(rows[0]).toBe(HEADER);
+    expect(rows[1]?.split(',')[7]).toBe('7654321');
+  });
+
+  it('sends only the header to a VIEWER when nothing matches, still without salary', async () => {
+    const response = await download({ country: 'JP' }, viewer);
+
+    expect(lines(response.body)).toEqual([VIEWER_HEADER]);
+  });
+});

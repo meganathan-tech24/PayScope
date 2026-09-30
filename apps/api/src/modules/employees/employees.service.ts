@@ -1,7 +1,9 @@
 import type { EmployeeDirectory, EmployeeFull, Role } from '@payscope/types';
 
+import type { CsvCell } from '../../lib/csv.js';
 import { NotFoundError } from '../../lib/errors/app-error.js';
 
+import { exportColumnsFor } from './employees.export.js';
 import * as repository from './employees.repository.js';
 import type {
   EmployeeInput,
@@ -9,7 +11,7 @@ import type {
   ListEmployeesQuery,
 } from './employees.schema.js';
 import { serializeEmployee } from './employees.serializer.js';
-import type { Employee, EmployeePage } from './employees.types.js';
+import type { EmployeePage } from './employees.types.js';
 
 // Every function that returns an employee takes the caller's role and returns
 // the serialized shape, so a controller never sees (or forgets to filter) a raw row.
@@ -54,7 +56,22 @@ export function deleteEmployee(id: string): Promise<void> {
   return repository.deleteEmployee(id);
 }
 
-export function exportEmployees(query: ExportEmployeesQuery): AsyncGenerator<Employee[]> {
+export interface EmployeeExport {
+  header: string[];
+  batches: AsyncGenerator<CsvCell[][]>;
+}
+
+// Rows come out already reduced to the columns this role may see.
+export function exportEmployees(query: ExportEmployeesQuery, role: Role): EmployeeExport {
   const { sortBy, sortDir, ...filters } = query;
-  return repository.streamEmployees(filters, { sortBy, sortDir });
+  const columns = exportColumnsFor(role);
+  const source = repository.streamEmployees(filters, { sortBy, sortDir });
+
+  async function* batches(): AsyncGenerator<CsvCell[][]> {
+    for await (const batch of source) {
+      yield batch.map((employee) => columns.map((column) => column.cell(employee)));
+    }
+  }
+
+  return { header: columns.map((column) => column.header), batches: batches() };
 }

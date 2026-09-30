@@ -6,7 +6,6 @@ import type { NextFunction, Request, Response } from 'express';
 import { toCsvRow } from '../../lib/csv.js';
 import { UnauthorizedError } from '../../lib/errors/app-error.js';
 
-import { EXPORT_COLUMNS, employeeToCsvCells } from './employees.export.js';
 import type {
   EmployeeInput,
   ExportEmployeesQuery,
@@ -105,7 +104,10 @@ export async function exportEmployeesCsvHandler(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const batches = service.exportEmployees(req.query as unknown as ExportEmployeesQuery);
+    const { header, batches } = service.exportEmployees(
+      req.query as unknown as ExportEmployeesQuery,
+      roleOf(req),
+    );
     // Fetch the first batch before sending headers: a database failure here is
     // still a normal JSON error response rather than a half-written file.
     let batch = await batches.next();
@@ -123,10 +125,10 @@ export async function exportEmployeesCsvHandler(
       }
     };
 
-    await write(toCsvRow([...EXPORT_COLUMNS]));
+    await write(toCsvRow(header));
     while (!batch.done && !res.destroyed) {
-      for (const employee of batch.value) {
-        await write(toCsvRow(employeeToCsvCells(employee)));
+      for (const cells of batch.value) {
+        await write(toCsvRow(cells));
       }
       batch = await batches.next();
     }

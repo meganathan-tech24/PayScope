@@ -126,3 +126,62 @@ describe('employee list and detail by role (integration)', () => {
     expect(asHr.body.data[0]).toHaveProperty('salary');
   });
 });
+
+describe('salary ordering and filters for a VIEWER (integration)', () => {
+  it.each(['asc', 'desc'])('rejects sortBy=salary (%s) on the list with 400', async (sortDir) => {
+    await seed(1);
+
+    const response = await request(app)
+      .get(API)
+      .set('Authorization', viewerAuth)
+      .query({ sortBy: 'salary', sortDir });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      success: false,
+      message: expect.stringContaining('salary'),
+      code: 'VALIDATION_ERROR',
+      requestId: expect.stringMatching(/^req_/),
+    });
+  });
+
+  it.each([['minSalary'], ['maxSalary'], ['salary']])(
+    'rejects a %s filter with 400 (unknown query field)',
+    async (field) => {
+      const response = await request(app)
+        .get(API)
+        .set('Authorization', viewerAuth)
+        .query({ [field]: 1_000_000 });
+
+      expect(response.status).toBe(400);
+      expect(response.body.code).toBe('VALIDATION_ERROR');
+    },
+  );
+
+  it('still lets a VIEWER sort by other fields', async () => {
+    await seed(1);
+    await seed(2);
+
+    for (const sortBy of ['fullName', 'email', 'jobTitle', 'department', 'country', 'hireDate']) {
+      const response = await request(app)
+        .get(API)
+        .set('Authorization', viewerAuth)
+        .query({ sortBy, sortDir: 'desc' });
+
+      expect(response.status).toBe(200);
+    }
+  });
+
+  it('still lets an HR_MANAGER sort by salary', async () => {
+    await seed(1, 1_000_000);
+    await seed(2, 2_000_000);
+
+    const response = await request(app)
+      .get(API)
+      .set('Authorization', hrAuth)
+      .query({ sortBy: 'salary', sortDir: 'desc' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data[0].salary).toBe(2_000_000);
+  });
+});

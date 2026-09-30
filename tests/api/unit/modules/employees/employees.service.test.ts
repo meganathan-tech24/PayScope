@@ -10,7 +10,7 @@ vi.mock('@api/modules/employees/employees.repository.js', () => ({
 }));
 
 import type { Employee } from '@api/generated/prisma/client.js';
-import { NotFoundError } from '@api/lib/errors/app-error.js';
+import { NotFoundError, ValidationError } from '@api/lib/errors/app-error.js';
 import * as repository from '@api/modules/employees/employees.repository.js';
 import * as service from '@api/modules/employees/employees.service.js';
 
@@ -71,5 +71,41 @@ describe('employees service, role-based shape', () => {
 
     expect(await service.createEmployee(input)).toHaveProperty('salary', 9_000_000);
     expect(await service.updateEmployee('emp-1', input)).toHaveProperty('salary', 9_000_000);
+  });
+});
+
+describe('employees service, salary ordering', () => {
+  it('rejects a VIEWER sorting the list by salary before touching the repository', async () => {
+    await expect(service.listEmployees({ ...query, sortBy: 'salary' }, 'VIEWER')).rejects.toThrow(
+      ValidationError,
+    );
+
+    expect(repository.listEmployees).not.toHaveBeenCalled();
+  });
+
+  it('rejects a VIEWER exporting sorted by salary before touching the repository', () => {
+    expect(() => service.exportEmployees({ sortBy: 'salary', sortDir: 'desc' }, 'VIEWER')).toThrow(
+      ValidationError,
+    );
+
+    expect(repository.streamEmployees).not.toHaveBeenCalled();
+  });
+
+  it('lets an HR_MANAGER sort the list by salary', async () => {
+    vi.mocked(repository.listEmployees).mockResolvedValue({ items: [], total: 0 });
+
+    await service.listEmployees({ ...query, sortBy: 'salary' }, 'HR_MANAGER');
+
+    expect(repository.listEmployees).toHaveBeenCalledOnce();
+  });
+
+  it('lets a VIEWER sort by every other field', async () => {
+    vi.mocked(repository.listEmployees).mockResolvedValue({ items: [], total: 0 });
+
+    for (const sortBy of ['fullName', 'email', 'jobTitle', 'department', 'country', 'hireDate']) {
+      await service.listEmployees({ ...query, sortBy: sortBy as 'fullName' }, 'VIEWER');
+    }
+
+    expect(repository.listEmployees).toHaveBeenCalledTimes(6);
   });
 });

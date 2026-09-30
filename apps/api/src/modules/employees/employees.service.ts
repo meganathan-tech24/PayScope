@@ -3,6 +3,7 @@ import type { EmployeeDirectory, EmployeeFull, Role } from '@payscope/types';
 import type { CsvCell } from '../../lib/csv.js';
 import { NotFoundError } from '../../lib/errors/app-error.js';
 
+import { assertQueryAllowed } from './employees.access.js';
 import { exportColumnsFor } from './employees.export.js';
 import * as repository from './employees.repository.js';
 import type {
@@ -16,6 +17,7 @@ import type { EmployeePage } from './employees.types.js';
 // Every function that returns an employee takes the caller's role and returns
 // the serialized shape, so a controller never sees (or forgets to filter) a raw row.
 export async function listEmployees(query: ListEmployeesQuery, role: Role): Promise<EmployeePage> {
+  assertQueryAllowed(query, role);
   const { page, pageSize, sortBy, sortDir, ...filters } = query;
 
   const { items, total } = await repository.listEmployees({
@@ -63,6 +65,7 @@ export interface EmployeeExport {
 
 // Rows come out already reduced to the columns this role may see.
 export function exportEmployees(query: ExportEmployeesQuery, role: Role): EmployeeExport {
+  assertQueryAllowed(query, role);
   const { sortBy, sortDir, ...filters } = query;
   const columns = exportColumnsFor(role);
   const source = repository.streamEmployees(filters, { sortBy, sortDir });

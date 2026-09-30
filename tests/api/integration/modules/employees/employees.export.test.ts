@@ -263,4 +263,26 @@ describe('GET /employees/export.csv by role (integration)', () => {
 
     expect(lines(response.body)).toEqual([VIEWER_HEADER]);
   });
+
+  it('rejects a VIEWER exporting sorted by salary with 400 and no CSV', async () => {
+    await seed();
+
+    const response = await request(app)
+      .get(EXPORT)
+      .set('Authorization', viewer)
+      .query({ sortBy: 'salary' });
+
+    expect(response.status).toBe(400);
+    expect(response.headers['content-type']).toMatch(/^application\/json/);
+    expect(response.body.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('still lets an HR_MANAGER export sorted by salary', async () => {
+    await seed({ salary: 1_000_000 });
+    await seed({ salary: 2_000_000 });
+
+    const rows = lines((await download({ sortBy: 'salary', sortDir: 'desc' }, hr)).body);
+
+    expect(rows[1]?.split(',')[7]).toBe('2000000');
+  });
 });

@@ -23,6 +23,13 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     stack: err instanceof Error ? err.stack : undefined,
   });
 
+  // Once streaming has started we can't send a JSON envelope; cut the connection
+  // so the client sees a truncated download instead of a silently short file.
+  if (res.headersSent) {
+    res.destroy();
+    return;
+  }
+
   const body: ApiErrorEnvelope = {
     success: false,
     message: classified.message,

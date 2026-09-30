@@ -80,6 +80,13 @@ export const listEmployeesQuerySchema = z
   })
   .strict();
 
+// Same filters and sort as the list; page/pageSize don't apply to an export.
+export const exportEmployeesQuerySchema = listEmployeesQuerySchema.omit({
+  page: true,
+  pageSize: true,
+});
+
 export type EmployeeInput = z.infer<typeof employeeBodySchema>;
 export type ListEmployeesQuery = z.infer<typeof listEmployeesQuerySchema>;
+export type ExportEmployeesQuery = z.infer<typeof exportEmployeesQuerySchema>;
 export type EmployeeSortField = (typeof EMPLOYEE_SORT_FIELDS)[number];

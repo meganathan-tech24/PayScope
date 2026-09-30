@@ -7,6 +7,7 @@ import { validate } from '../../middleware/validation.middleware.js';
 import {
   createEmployeeHandler,
   deleteEmployeeHandler,
+  exportEmployeesCsvHandler,
   getEmployeeHandler,
   listEmployeesHandler,
   updateEmployeeHandler,
@@ -14,6 +15,7 @@ import {
 import {
   employeeBodySchema,
   employeeIdParamsSchema,
+  exportEmployeesQuerySchema,
   listEmployeesQuerySchema,
 } from './employees.schema.js';
 
@@ -27,7 +29,12 @@ employeesRouter.use(authenticate);
 const hrOnly = authorize('HR_MANAGER');
 
 employeesRouter.get('/', validate({ query: listEmployeesQuerySchema }), listEmployeesHandler);
-// Static routes such as /export.csv must be registered above /:id.
+// Static routes must be registered above /:id, or it would capture them.
+employeesRouter.get(
+  '/export.csv',
+  validate({ query: exportEmployeesQuerySchema }),
+  exportEmployeesCsvHandler,
+);
 employeesRouter.get('/:id', validate({ params: employeeIdParamsSchema }), getEmployeeHandler);
 employeesRouter.post('/', hrOnly, validate({ body: employeeBodySchema }), createEmployeeHandler);
 employeesRouter.put(

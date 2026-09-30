@@ -1,7 +1,16 @@
+import { once } from 'node:events';
+
 import type { ApiSuccessEnvelope } from '@payscope/types';
 import type { NextFunction, Request, Response } from 'express';
 
-import type { EmployeeInput, ListEmployeesQuery } from './employees.schema.js';
+import { toCsvRow } from '../../lib/csv.js';
+
+import { EXPORT_COLUMNS, employeeToCsvCells } from './employees.export.js';
+import type {
+  EmployeeInput,
+  ExportEmployeesQuery,
+  ListEmployeesQuery,
+} from './employees.schema.js';
 import * as service from './employees.service.js';
 import type { Employee } from './employees.types.js';
 
@@ -76,6 +85,43 @@ export async function deleteEmployeeHandler(
   try {
     await service.deleteEmployee(idOf(req));
     res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function exportEmployeesCsvHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const batches = service.exportEmployees(req.query as unknown as ExportEmployeesQuery);
+    // Fetch the first batch before sending headers: a database failure here is
+    // still a normal JSON error response rather than a half-written file.
+    let batch = await batches.next();
+
+    const filename = `employees-${new Date().toISOString().slice(0, 10)}.csv`;
+    res.status(200);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    const closed = new Promise<void>((resolve) => res.once('close', resolve));
+    const write = async (chunk: string): Promise<void> => {
+      // Respect backpressure so a slow client doesn't make us buffer the file.
+      if (!res.write(chunk)) {
+        await Promise.race([once(res, 'drain'), closed]);
+      }
+    };
+
+    await write(toCsvRow([...EXPORT_COLUMNS]));
+    while (!batch.done && !res.destroyed) {
+      for (const employee of batch.value) {
+        await write(toCsvRow(employeeToCsvCells(employee)));
+      }
+      batch = await batches.next();
+    }
+    res.end();
   } catch (error) {
     next(error);
   }

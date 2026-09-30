@@ -1,7 +1,11 @@
 import { NotFoundError } from '../../lib/errors/app-error.js';
 
 import * as repository from './employees.repository.js';
-import type { EmployeeInput, ListEmployeesQuery } from './employees.schema.js';
+import type {
+  EmployeeInput,
+  ExportEmployeesQuery,
+  ListEmployeesQuery,
+} from './employees.schema.js';
 import type { Employee, EmployeePage } from './employees.types.js';
 
 export async function listEmployees(query: ListEmployeesQuery): Promise<EmployeePage> {
@@ -39,4 +43,9 @@ export function updateEmployee(id: string, data: EmployeeInput): Promise<Employe
 
 export function deleteEmployee(id: string): Promise<void> {
   return repository.deleteEmployee(id);
+}
+
+export function exportEmployees(query: ExportEmployeesQuery): AsyncGenerator<Employee[]> {
+  const { sortBy, sortDir, ...filters } = query;
+  return repository.streamEmployees(filters, { sortBy, sortDir });
 }

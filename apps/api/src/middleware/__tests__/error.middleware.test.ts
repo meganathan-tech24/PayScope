@@ -84,6 +84,19 @@ describe('errorHandler', () => {
     );
   });
 
+  it('logs and drops the connection instead of crashing when headers were already sent', async () => {
+    const app = express();
+    app.use(requestIdMiddleware);
+    app.get('/stream', (_req, res, next) => {
+      res.write('partial,');
+      next(new Error('failed mid-stream'));
+    });
+    app.use(errorHandler);
+
+    await expect(request(app).get('/stream')).rejects.toThrow();
+    expect(logger.error).toHaveBeenCalledWith('failed mid-stream', expect.anything());
+  });
+
   it('propagates NotFoundError thrown directly by application code', async () => {
     const app = express();
     app.use(requestIdMiddleware);

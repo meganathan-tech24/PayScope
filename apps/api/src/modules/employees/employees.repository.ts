@@ -69,6 +69,34 @@ function isPrismaError(error: unknown, code: string): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === code;
 }
 
+export const EXPORT_BATCH_SIZE = 500;
+
+// Yields matching employees a batch at a time using keyset (cursor) paging, so
+// only one batch is in memory. Resuming from the last row's id is safe because
+// buildEmployeeOrderBy always ends with id, giving a total order.
+export async function* streamEmployees(
+  filters: EmployeeFilters,
+  sort: EmployeeSort,
+  batchSize = EXPORT_BATCH_SIZE,
+): AsyncGenerator<Employee[]> {
+  const where = buildEmployeeWhere(filters);
+  const orderBy = buildEmployeeOrderBy(sort);
+  let cursorId: string | undefined;
+
+  for (;;) {
+    const batch = await prisma.employee.findMany({
+      where,
+      orderBy,
+      take: batchSize,
+      ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
+    });
+    if (batch.length === 0) return;
+    yield batch;
+    if (batch.length < batchSize) return;
+    cursorId = batch[batch.length - 1]?.id;
+  }
+}
+
 export function findEmployeeById(id: string): Promise<Employee | null> {
   return prisma.employee.findUnique({ where: { id } });
 }

@@ -68,20 +68,25 @@ export interface InsightMeta {
   excludedHeadcount: number;
 }
 
-export interface InsightStatsRow {
+/** What a VIEWER receives: no min or max, which are single people's salaries. */
+export interface InsightStatsRowBasic {
   key: string;
   currency: string;
   headcount: number;
-  min: number;
   p25: number;
   median: number;
   avg: number;
   p75: number;
+}
+
+/** HR_MANAGER: the basic row plus the extremes. */
+export interface InsightStatsRow extends InsightStatsRowBasic {
+  min: number;
   max: number;
 }
 
 export interface InsightStats extends InsightMeta {
-  rows: InsightStatsRow[];
+  rows: (InsightStatsRow | InsightStatsRowBasic)[];
   /** Groups left out because a VIEWER may not see groups this small. 0 for HR_MANAGER. */
   suppressedGroups: number;
 }

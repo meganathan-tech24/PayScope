@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { employeeDirectorySchema, employeeFullSchema, ROLES } from '@shared/index.js';
+import {
+  employeeDirectorySchema,
+  employeeFullSchema,
+  insightStatsRowBasicSchema,
+  insightStatsRowSchema,
+  ROLES,
+} from '@shared/index.js';
 
 const directory = {
   id: '00000000-0000-4000-8000-000000000001',
@@ -40,5 +46,20 @@ describe('employeeFullSchema', () => {
 
   it('requires the salary', () => {
     expect(employeeFullSchema.safeParse(directory).success).toBe(false);
+  });
+});
+
+describe('insight stats row schemas', () => {
+  const basic = { key: 'GB', currency: 'GBP', headcount: 5, p25: 2, median: 3, avg: 3, p75: 4 };
+
+  it('accepts the basic row and rejects a min or max key on it', () => {
+    expect(insightStatsRowBasicSchema.safeParse(basic).success).toBe(true);
+    expect(insightStatsRowBasicSchema.safeParse({ ...basic, min: 1 }).success).toBe(false);
+    expect(insightStatsRowBasicSchema.safeParse({ ...basic, max: 5 }).success).toBe(false);
+  });
+
+  it('needs min and max on the full row', () => {
+    expect(insightStatsRowSchema.safeParse({ ...basic, min: 1, max: 5 }).success).toBe(true);
+    expect(insightStatsRowSchema.safeParse(basic).success).toBe(false);
   });
 });

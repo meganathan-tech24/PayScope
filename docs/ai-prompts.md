@@ -106,3 +106,11 @@ Key prompts and instructions given to the AI coding tool, and the decisions that
 - **What the AI proposed:** Add employment type to the group in the outlier SQL, make the seeded high outlier full-time so the existing hand-checked dataset still holds, and add three tests (interns paid below the title median are not flagged, a real outlier inside its own group is flagged, a small group is never flagged).
 - **Outcome:** On the seed 176 employees are flagged across 233 groups (was 483); 19 ms HTTP. Integration tests 165 to 168.
 
+---
+
+## Phase 6 follow-up 2: no min or max for VIEWER
+- **Prompt / instruction:** Remove `min` and `max` from VIEWER stats responses (HR unchanged), keep the under-5 suppression, record the remaining risk, and prove it with a strict schema parse and a raw-text check.
+- **What the AI proposed:** A basic stats row type and strict zod schema (no min or max) beside the full row, an allowlist serializer in the service (any role other than HR gets the basic row), and tests at unit, schema and HTTP level for country, job title, department and the USD view.
+- **What I changed or rejected, and why:** Did not change the salary-bands endpoint, which was outside the request, but flagged that its outer bucket edges for a VIEWER are still the exact minimum and maximum; recorded with the tightening options in design-notes.
+- **Outcome:** Unit 264 to 267, integration 168 to 173.
+

@@ -2,6 +2,8 @@ import type {
   HeadcountRow,
   InsightMeta,
   InsightStats,
+  InsightStatsRow,
+  InsightStatsRowBasic,
   InsightView,
   OutlierList,
   Role,
@@ -30,13 +32,28 @@ async function metaFor(view: InsightView, filters: InsightFilters): Promise<Insi
   return { view, approximate: true, excludedHeadcount: await repository.countWithoutRate(filters) };
 }
 
+// Explicit allowlist, like the employee serializer: min and max are single people's
+// salaries, so only HR_MANAGER gets them and any other role gets the basic row.
+function serializeStatsRow(
+  row: InsightStatsRow,
+  role: Role,
+): InsightStatsRow | InsightStatsRowBasic {
+  const { key, currency, headcount, p25, median, avg, p75 } = row;
+  const basic: InsightStatsRowBasic = { key, currency, headcount, p25, median, avg, p75 };
+  return role === 'HR_MANAGER' ? { ...basic, min: row.min, max: row.max } : basic;
+}
+
 export async function getStats(query: StatsQuery, role: Role): Promise<InsightStats> {
   const { groupBy, view, ...filters } = query;
 
   const groups = await repository.getStats(groupBy, filters, repository.salarySource(view));
   const { visible, suppressed } = limitGroupsForRole(groups, role);
 
-  return { ...(await metaFor(view, filters)), rows: visible, suppressedGroups: suppressed };
+  return {
+    ...(await metaFor(view, filters)),
+    rows: visible.map((row) => serializeStatsRow(row, role)),
+    suppressedGroups: suppressed,
+  };
 }
 
 // Headcount carries no salary data, so every role sees every group.

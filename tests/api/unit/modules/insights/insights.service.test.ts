@@ -56,4 +56,37 @@ describe('insights service, role rules', () => {
     expect(viewer.suppressedGroups).toBe(1);
     expect(hr.rows).toHaveLength(2);
   });
+
+  it('leaves min and max out of VIEWER rows, keeps them for HR, and fails closed for other roles', async () => {
+    vi.mocked(repository.getStats).mockResolvedValue([
+      {
+        key: 'A',
+        currency: 'GBP',
+        headcount: 6,
+        min: 10,
+        p25: 20,
+        median: 30,
+        avg: 30,
+        p75: 40,
+        max: 50,
+      },
+    ]);
+    const query = { groupBy: 'country', view: 'native' } as const;
+
+    const viewer = (await service.getStats(query, 'VIEWER')).rows[0];
+    const other = (await service.getStats(query, 'ADMIN' as Role)).rows[0];
+    const hr = (await service.getStats(query, 'HR_MANAGER')).rows[0];
+
+    expect(viewer).toEqual({
+      key: 'A',
+      currency: 'GBP',
+      headcount: 6,
+      p25: 20,
+      median: 30,
+      avg: 30,
+      p75: 40,
+    });
+    expect(other).not.toHaveProperty('min');
+    expect(hr).toMatchObject({ min: 10, max: 50 });
+  });
 });

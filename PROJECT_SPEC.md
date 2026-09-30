@@ -462,7 +462,7 @@ Field-level filtering happens **in the service layer**, through one serializer, 
 - `tenure`: headcount, median and average pay by tenure band (`<1y`, `1-3y`, `3-5y`, `5-10y`, `10y+`)
 - `outliers?limit=50`: employees outside the Tukey fences of their like-for-like group (same country, currency, job title and employment type; groups of at least 8, smaller groups are never flagged); **`HR_MANAGER` only**, 403 for `VIEWER`
 - `view=usd`: optional org-wide normalization from a static, documented rate table; results are US cents, labelled `approximate`, and report employees with no rate instead of dropping them
-- For a `VIEWER`, groups (and salary-band sets) with fewer than 5 employees are suppressed, with a count of what was hidden, because a statistic over one person is that person's salary
+- For a `VIEWER`, groups (and salary-band sets) with fewer than 5 employees are suppressed, with a count of what was hidden, because a statistic over one person is that person's salary, and stats rows omit `min` and `max` (single people's salaries); `HR_MANAGER` gets the full row
 
 Provide **OpenAPI/Swagger** docs (e.g. `swagger-ui-express` at `/api/docs`, generated from or kept in sync with the zod schemas).
 

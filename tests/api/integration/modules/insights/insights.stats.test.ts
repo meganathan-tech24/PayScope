@@ -3,6 +3,7 @@ import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '@api/app/app.js';
+import { insightStatsRowBasicSchema, insightStatsRowSchema } from '@shared/index.js';
 import { seedEmployees, withSalaries } from '@tests/factories/employee-row.js';
 import { hrAuth, viewerAuth } from '@tests/helpers/tokens.js';
 
@@ -171,7 +172,7 @@ describe('GET /insights/stats as a VIEWER (integration)', () => {
 
     for (const item of response.body.data.rows) {
       expect(Object.keys(item).sort()).toEqual(
-        ['avg', 'currency', 'headcount', 'key', 'max', 'median', 'min', 'p25', 'p75'].sort(),
+        ['avg', 'currency', 'headcount', 'key', 'median', 'p25', 'p75'].sort(),
       );
     }
     expect(response.text).not.toMatch(/fullName|email|"id"/);
@@ -182,5 +183,38 @@ describe('GET /insights/stats as a VIEWER (integration)', () => {
 
     expect(response.body.data.rows).toHaveLength(4);
     expect(response.body.data.suppressedGroups).toBe(0);
+  });
+});
+
+describe('min and max in stats by role (integration)', () => {
+  it.each(['country', 'jobTitle', 'department'])(
+    'gives a VIEWER no min or max grouped by %s: strict schema and raw text',
+    async (groupBy) => {
+      const response = await get({ groupBy }, viewerAuth);
+
+      expect(response.body.data.rows.length).toBeGreaterThan(0);
+      for (const item of response.body.data.rows) {
+        expect(insightStatsRowBasicSchema.strict().safeParse(item).success).toBe(true);
+        expect(item).not.toHaveProperty('min');
+        expect(item).not.toHaveProperty('max');
+      }
+      expect(JSON.stringify(response.body.data)).not.toMatch(/"(min|max)"/);
+    },
+  );
+
+  it('also hides min and max from a VIEWER in the USD view', async () => {
+    const response = await get({ groupBy: 'org', view: 'usd' }, viewerAuth);
+
+    expect(response.text).not.toMatch(/"(min|max)"/);
+  });
+
+  it('still gives an HR_MANAGER min and max on every row', async () => {
+    const response = await get({}, hrAuth);
+
+    for (const item of response.body.data.rows) {
+      expect(insightStatsRowSchema.strict().safeParse(item).success).toBe(true);
+    }
+    expect(response.text).toMatch(/"min"/);
+    expect(response.text).toMatch(/"max"/);
   });
 });

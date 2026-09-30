@@ -189,7 +189,7 @@ Base path `/api/v1`. All routes except register and login require `Authorization
 | GET    | `/insights/tenure`      | Headcount, median and average pay by tenure band |
 | GET    | `/insights/outliers`    | Employees outside their group's pay range (HR_MANAGER only, 403 for VIEWER) |
 
-Insights accept optional `country`, `currency`, `department` and `jobTitle` filters. `view=usd` converts with a static, approximate rate table and says so in the response. A `VIEWER` does not receive groups of fewer than 5 people.
+Insights accept optional `country`, `currency`, `department` and `jobTitle` filters. `view=usd` converts with a static, approximate rate table and says so in the response. A `VIEWER` does not receive groups of fewer than 5 people, and stats rows for a `VIEWER` have no `min` or `max`.
 
 ### Roles and access
 
@@ -197,7 +197,7 @@ One sign-in page serves every role (email and password only); the API returns th
 
 | | `HR_MANAGER` | `VIEWER` |
 | --- | --- | --- |
-| Insights | Full, including the outliers table | Aggregated statistics only (groups under 5 people hidden); outliers endpoint is 403 |
+| Insights | Full, including the outliers table and min/max | Aggregated statistics only (groups under 5 people hidden, no min/max); outliers endpoint is 403 |
 | Employee list and detail | All fields, including salary | Directory fields only: the `salary` key is omitted |
 | Sort and filter | Any whitelisted field | Salary sort is rejected with 400 |
 | CSV export | All columns | Same rows, no salary column |

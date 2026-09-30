@@ -66,5 +66,10 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # Runs the built bundle the way a host does: missing variables fail fast, it answers
+      # /api/v1/health, and SIGTERM stops it cleanly.
+      - name: Production start smoke check
+        run: pnpm smoke:production
+
       - name: E2E tests
         run: pnpm test:e2e

@@ -1,5 +1,4 @@
-import type { User } from '@prisma/client';
-
+import type { User } from '../../generated/prisma/client.js';
 import { ConflictError, UnauthorizedError } from '../../lib/errors/app-error.js';
 import { signToken } from '../../lib/jwt.js';
 import { hashPassword, verifyPassword } from '../../lib/password.js';

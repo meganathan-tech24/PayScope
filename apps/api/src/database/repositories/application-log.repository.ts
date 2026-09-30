@@ -1,5 +1,4 @@
-import { LogLevel as PrismaLogLevel, type Prisma } from '@prisma/client';
-
+import { LogLevel as PrismaLogLevel, type Prisma } from '../../generated/prisma/client.js';
 import type { LogEntry, LogLevel } from '../../lib/logging/log-transport.js';
 import { prisma } from '../prisma.js';
 

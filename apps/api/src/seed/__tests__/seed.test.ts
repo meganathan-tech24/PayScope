@@ -1,6 +1,6 @@
-import type { PrismaClient } from '@prisma/client';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { PrismaClient } from '../../generated/prisma/client.js';
 import { BATCH_SIZE, DEFAULT_DEMO_PASSWORD, DEMO_USERS, runSeed } from '../seed.js';
 
 function fakePrisma(storedCount?: number) {

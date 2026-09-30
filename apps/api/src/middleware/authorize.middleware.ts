@@ -1,6 +1,6 @@
-import type { Role } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
 
+import type { Role } from '../generated/prisma/client.js';
 import { ForbiddenError } from '../lib/errors/app-error.js';
 
 export function authorize(...roles: Role[]) {

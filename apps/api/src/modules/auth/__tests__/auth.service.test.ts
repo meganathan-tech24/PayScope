@@ -1,4 +1,3 @@
-import type { User } from '@prisma/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../auth.repository.js', () => ({
@@ -7,6 +6,7 @@ vi.mock('../auth.repository.js', () => ({
   createUser: vi.fn(),
 }));
 
+import type { User } from '../../../generated/prisma/client.js';
 import { ConflictError, UnauthorizedError } from '../../../lib/errors/app-error.js';
 import * as passwordLib from '../../../lib/password.js';
 import { createUser, findUserByEmail, findUserById } from '../auth.repository.js';

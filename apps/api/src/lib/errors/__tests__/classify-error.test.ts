@@ -1,7 +1,7 @@
-import { Prisma } from '@prisma/client';
 import { describe, expect, it } from 'vitest';
 import { ZodError } from 'zod';
 
+import { Prisma } from '../../../generated/prisma/client.js';
 import { NotFoundError, ValidationError } from '../app-error.js';
 import { classifyError } from '../classify-error.js';
 

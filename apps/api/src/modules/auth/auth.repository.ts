@@ -1,6 +1,5 @@
-import { Prisma, type User } from '@prisma/client';
-
 import { prisma } from '../../database/prisma.js';
+import { Prisma, type User } from '../../generated/prisma/client.js';
 import { ConflictError } from '../../lib/errors/app-error.js';
 
 export function findUserByEmail(email: string): Promise<User | null> {

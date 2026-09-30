@@ -1,5 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
-
+import type { PrismaClient } from '../generated/prisma/client.js';
 import { hashPassword } from '../lib/password.js';
 
 import { generateEmployees } from './employee-generator.js';

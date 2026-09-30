@@ -1,6 +1,5 @@
-import { Prisma, type Employee } from '@prisma/client';
-
 import { prisma } from '../../database/prisma.js';
+import { Prisma, type Employee } from '../../generated/prisma/client.js';
 import { ConflictError, NotFoundError } from '../../lib/errors/app-error.js';
 
 import type { EmployeeInput, EmployeeSortField } from './employees.schema.js';

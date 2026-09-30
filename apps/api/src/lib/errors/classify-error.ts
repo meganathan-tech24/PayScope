@@ -1,5 +1,6 @@
-import { Prisma } from '@prisma/client';
 import { ZodError } from 'zod';
+
+import { Prisma } from '../../generated/prisma/client.js';
 
 import { AppError } from './app-error.js';
 

@@ -1,4 +1,3 @@
-import type { User } from '@prisma/client';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -15,6 +14,7 @@ vi.mock('../../../lib/logging/db-transport.js', () => ({
 }));
 
 import { createApp } from '../../../app/app.js';
+import type { User } from '../../../generated/prisma/client.js';
 import { consoleTransport } from '../../../lib/logging/console-transport.js';
 import { dbTransport } from '../../../lib/logging/db-transport.js';
 import { hashPassword } from '../../../lib/password.js';

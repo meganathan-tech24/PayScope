@@ -1,3 +1,4 @@
+import { SlidersHorizontal, X } from 'lucide-react';
 import { useId, useState, type ReactNode } from 'react';
 
 import { Button } from '../../../components/ui/Button';
@@ -36,7 +37,7 @@ export function EmployeeFilters({
       role="search"
       aria-label="Filter employees"
       onSubmit={(event) => event.preventDefault()}
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,2.4fr)] lg:items-end"
     >
       <TextField
         label="Search by name or email"
@@ -53,7 +54,9 @@ export function EmployeeFilters({
       <div className="md:hidden">
         <Button
           type="button"
-          variant="secondary"
+          tone="neutral"
+          look="outline"
+          icon={SlidersHorizontal}
           aria-expanded={open}
           aria-controls={panelId}
           onClick={() => setOpen((value) => !value)}
@@ -73,7 +76,7 @@ export function EmployeeFilters({
       <div
         id={panelId}
         className={[
-          'gap-4 md:grid md:grid-cols-4',
+          'gap-4 md:grid md:grid-cols-4 lg:grid-cols-[repeat(3,minmax(0,1fr))_auto]',
           open ? 'grid grid-cols-1 sm:grid-cols-2' : 'hidden',
         ].join(' ')}
       >
@@ -114,7 +117,14 @@ export function EmployeeFilters({
           ))}
         </SelectField>
         <div className="flex items-end">
-          <Button type="button" variant="secondary" onClick={onClear} disabled={!hasFilters}>
+          <Button
+            type="button"
+            tone="neutral"
+            look="outline"
+            icon={X}
+            onClick={onClear}
+            disabled={!hasFilters}
+          >
             Clear filters
           </Button>
         </div>

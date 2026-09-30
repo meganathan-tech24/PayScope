@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import { Download } from 'lucide-react';
 
 import { Alert } from '../../../components/ui/Alert';
 import { Button } from '../../../components/ui/Button';
@@ -24,7 +25,13 @@ export function ExportButton({ params }: { params: EmployeeListParams }) {
 
   return (
     <div className="flex flex-col items-end gap-2">
-      <Button variant="secondary" loading={exportCsv.isPending} onClick={() => exportCsv.mutate()}>
+      <Button
+        tone="download"
+        look="outline"
+        icon={Download}
+        loading={exportCsv.isPending}
+        onClick={() => exportCsv.mutate()}
+      >
         {exportCsv.isPending ? 'Preparing…' : 'Export CSV'}
       </Button>
       {exportCsv.isError ? <Alert tone="error">The export failed. Please try again.</Alert> : null}

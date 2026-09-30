@@ -1,8 +1,10 @@
 import type { EmployeeFull } from '@payscope/types';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { PageHeader } from '../components/layout/PageHeader';
 import { Alert } from '../components/ui/Alert';
-import { Button } from '../components/ui/Button';
+import { Button, IconButton } from '../components/ui/Button';
 import { EmptyState, ErrorState } from '../components/ui/StateMessages';
 import { useAuth } from '../features/auth/hooks/useAuth';
 import { DeleteEmployeeModal } from '../features/employees/components/DeleteEmployeeModal';
@@ -53,24 +55,51 @@ export function EmployeesPage() {
   const employees = list.data?.data ?? [];
   const meta = list.data?.meta;
 
-  const renderActions = (employee: EmployeeRow) => (
-    <>
-      <Button
-        variant="secondary"
-        aria-label={`Edit ${employee.fullName}`}
-        onClick={() => hasSalary(employee) && setDialog({ kind: 'form', employee })}
-      >
-        Edit
-      </Button>
-      <Button
-        variant="secondary"
-        aria-label={`Delete ${employee.fullName}`}
-        onClick={() => setDialog({ kind: 'delete', employee })}
-      >
-        Delete
-      </Button>
-    </>
-  );
+  // Edit is always soft blue with a pencil, delete soft red with a bin. Rows use compact icon
+  // buttons named for the person; cards have room for the word as well.
+  const renderActions = (employee: EmployeeRow, layout: 'row' | 'card') => {
+    const edit = () => hasSalary(employee) && setDialog({ kind: 'form', employee });
+    const remove = () => setDialog({ kind: 'delete', employee });
+    return layout === 'row' ? (
+      <>
+        <IconButton
+          label={`Edit ${employee.fullName}`}
+          icon={Pencil}
+          tone="edit"
+          look="soft"
+          onClick={edit}
+        />
+        <IconButton
+          label={`Delete ${employee.fullName}`}
+          icon={Trash2}
+          tone="danger"
+          look="soft"
+          onClick={remove}
+        />
+      </>
+    ) : (
+      <>
+        <Button
+          tone="edit"
+          look="soft"
+          icon={Pencil}
+          aria-label={`Edit ${employee.fullName}`}
+          onClick={edit}
+        >
+          Edit
+        </Button>
+        <Button
+          tone="danger"
+          look="soft"
+          icon={Trash2}
+          aria-label={`Delete ${employee.fullName}`}
+          onClick={remove}
+        >
+          Delete
+        </Button>
+      </>
+    );
+  };
 
   function sortBy(field: string) {
     update({
@@ -81,31 +110,31 @@ export function EmployeesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="display text-3xl font-semibold">Employees</h1>
-          <p className="max-w-prose text-neutral-600">
-            {isHr
-              ? 'Search, filter and manage employees and their pay.'
-              : 'Browse the employee directory. Individual salaries are not shown to your account.'}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-start gap-3">
-          {isHr ? (
-            <Button onClick={() => setDialog({ kind: 'form', employee: null })}>
-              Add employee
-            </Button>
-          ) : null}
-          <ExportButton params={params} />
-        </div>
-      </div>
+      <PageHeader
+        title="Employees"
+        description={
+          isHr
+            ? 'Search, filter and manage employees and their pay.'
+            : 'Browse the employee directory. Individual salaries are not shown to your account.'
+        }
+        actions={
+          <>
+            {isHr ? (
+              <Button icon={Plus} onClick={() => setDialog({ kind: 'form', employee: null })}>
+                Add employee
+              </Button>
+            ) : null}
+            <ExportButton params={params} />
+          </>
+        }
+      />
 
       {notice ? (
         <div className="flex items-start gap-3">
           <div className="flex-1">
             <Alert tone="success">{notice}</Alert>
           </div>
-          <Button variant="secondary" onClick={() => setNotice(null)}>
+          <Button tone="neutral" look="ghost" onClick={() => setNotice(null)}>
             Dismiss
           </Button>
         </div>
@@ -131,7 +160,7 @@ export function EmployeesPage() {
           title={hasFilters ? 'No employees match these filters' : 'No employees yet'}
           action={
             hasFilters ? (
-              <Button variant="secondary" onClick={clearFilters}>
+              <Button tone="neutral" look="outline" onClick={clearFilters}>
                 Clear filters
               </Button>
             ) : undefined
@@ -142,7 +171,7 @@ export function EmployeesPage() {
             : 'Employees will appear here.'}
         </EmptyState>
       ) : (
-        <>
+        <div className="flex flex-col gap-3 md:gap-0">
           <EmployeeTable
             employees={employees}
             params={params}
@@ -166,7 +195,7 @@ export function EmployeesPage() {
               onPage={(page) => update({ page })}
             />
           ) : null}
-        </>
+        </div>
       )}
 
       {dialog?.kind === 'form' ? (

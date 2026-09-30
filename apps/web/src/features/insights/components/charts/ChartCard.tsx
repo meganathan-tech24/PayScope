@@ -30,10 +30,10 @@ export function ChartCard({
   const headingId = useId();
 
   return (
-    <section aria-labelledby={headingId} className="card flex flex-col gap-4">
+    <section aria-labelledby={headingId} className="card flex min-w-0 flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h2 id={headingId} className="text-lg font-semibold text-neutral-900">
+          <h2 id={headingId} className="text-lg font-semibold tracking-tight text-neutral-900">
             {title}
           </h2>
           {description ? (
@@ -51,7 +51,9 @@ export function ChartCard({
               {chart}
             </div>
             {summary ? (
-              <figcaption className="text-sm text-neutral-700">{summary}</figcaption>
+              <figcaption className="border-t border-neutral-100 pt-3 text-sm text-neutral-700">
+                {summary}
+              </figcaption>
             ) : null}
           </figure>
           {table}

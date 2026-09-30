@@ -82,7 +82,7 @@ export function HeadcountSection({ by, onBy }: Props) {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-200">
+            <tbody>
               {rows.map((row) => (
                 <tr key={row.key}>
                   <th scope="row" className="px-4 py-2 font-medium">

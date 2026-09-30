@@ -50,8 +50,8 @@ export function TenureSection({ usd, currency }: { usd: boolean; currency: strin
           />
           <ChartLegend
             items={[
-              { kind: 'solid', label: 'Median pay' },
-              { kind: 'stripes', label: 'Average pay' },
+              { kind: 'median', label: 'Median pay' },
+              { kind: 'average', label: 'Average pay' },
             ]}
           />
         </div>
@@ -76,7 +76,7 @@ export function TenureSection({ usd, currency }: { usd: boolean; currency: strin
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-200">
+            <tbody>
               {bands.map((band) => (
                 <tr key={`${band.band}-${band.currency}`}>
                   <th scope="row" className="whitespace-nowrap px-4 py-2 font-medium">

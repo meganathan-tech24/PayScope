@@ -29,8 +29,12 @@ export function Modal({ title, onClose, children, size = 'sm' }: ModalProps) {
     if (!panel) return;
 
     const focusables = () => [...panel.querySelectorAll<HTMLElement>(FOCUSABLE)];
-    // Prefer the first form field over the close button.
-    const first = panel.querySelector<HTMLElement>('input, select, textarea') ?? focusables()[0];
+    // A control marked data-autofocus wins (the safe choice in a confirmation), then the
+    // first form field, then the first focusable element.
+    const first =
+      panel.querySelector<HTMLElement>('[data-autofocus]') ??
+      panel.querySelector<HTMLElement>('input, select, textarea') ??
+      focusables()[0];
     (first ?? panel).focus();
 
     const previousOverflow = document.body.style.overflow;
@@ -79,7 +83,7 @@ export function Modal({ title, onClose, children, size = 'sm' }: ModalProps) {
         aria-labelledby={titleId}
         tabIndex={-1}
         className={[
-          'relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-lg bg-white shadow-card sm:rounded-lg',
+          'relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-lg bg-white shadow-overlay sm:rounded-lg',
           size === 'lg' ? 'sm:max-w-2xl' : 'sm:max-w-md',
         ].join(' ')}
       >

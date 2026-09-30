@@ -78,7 +78,7 @@ export function SalaryBandsSection({ usd, currency }: { usd: boolean; currency: 
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-200">
+            <tbody>
               {buckets.map((bucket) => (
                 <tr key={bucket.from}>
                   <th scope="row" className="whitespace-nowrap px-4 py-2 font-medium">

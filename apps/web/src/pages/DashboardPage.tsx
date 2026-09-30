@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/layout/PageHeader';
 import { Alert } from '../components/ui/Alert';
 import { EmptyState } from '../components/ui/StateMessages';
 import { useAuth } from '../features/auth/hooks/useAuth';
@@ -37,12 +38,10 @@ export function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="display text-3xl font-semibold">Dashboard</h1>
-        <p className="max-w-prose text-neutral-600">
-          How the organisation pays, by country, job title and department.
-        </p>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        description="How the organisation pays, by country, job title and department."
+      />
 
       {!isHr ? (
         <Alert tone="info">
@@ -91,8 +90,10 @@ export function DashboardPage() {
             usd={params.usd}
             currency={currency}
           />
-          <SalaryBandsSection usd={params.usd} currency={currency} />
-          <TenureSection usd={params.usd} currency={currency} />
+          <div className="grid min-w-0 gap-6 2xl:grid-cols-2">
+            <SalaryBandsSection usd={params.usd} currency={currency} />
+            <TenureSection usd={params.usd} currency={currency} />
+          </div>
           {isHr ? <OutliersSection usd={params.usd} currency={currency} /> : null}
           <HeadcountSection
             by={params.headcountBy}

@@ -1,3 +1,5 @@
+import { Trash2 } from 'lucide-react';
+
 import { Alert } from '../../../components/ui/Alert';
 import { Button } from '../../../components/ui/Button';
 import { Modal } from '../../../components/ui/Modal';
@@ -38,10 +40,23 @@ export function DeleteEmployeeModal({
           and their salary, and cannot be undone.
         </p>
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <Button type="button" variant="secondary" onClick={onClose} disabled={remove.isPending}>
+          <Button
+            type="button"
+            tone="neutral"
+            look="outline"
+            data-autofocus
+            onClick={onClose}
+            disabled={remove.isPending}
+          >
             Cancel
           </Button>
-          <Button type="button" variant="danger" loading={remove.isPending} onClick={confirm}>
+          <Button
+            type="button"
+            tone="danger"
+            icon={Trash2}
+            loading={remove.isPending}
+            onClick={confirm}
+          >
             {remove.isPending ? 'Deleting…' : 'Delete employee'}
           </Button>
         </div>

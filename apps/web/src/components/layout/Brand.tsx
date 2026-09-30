@@ -6,16 +6,35 @@ export function Brand({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
     <Link
       to="/"
       className={[
-        'display inline-flex min-h-11 items-center gap-2 text-xl font-semibold',
+        'inline-flex min-h-11 items-center gap-2.5 text-lg font-semibold tracking-tight',
         tone === 'light' ? 'text-white' : 'text-neutral-900',
       ].join(' ')}
     >
-      <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0" fill="none" aria-hidden="true">
-        <rect x="3" y="13" width="4" height="8" rx="1" className="fill-brand-500" />
-        <rect x="10" y="7" width="4" height="14" rx="1" className="fill-signal" />
-        <rect x="17" y="3" width="4" height="18" rx="1" className="fill-brand-300" />
-      </svg>
+      <LogoMark tone={tone} />
       PayScope
     </Link>
+  );
+}
+
+// Three rising pay bars in a rounded square; the middle bar is the only amber in the mark.
+export function LogoMark({
+  tone = 'dark',
+  className = 'h-7 w-7',
+}: {
+  tone?: 'dark' | 'light';
+  className?: string;
+}) {
+  return (
+    <svg viewBox="0 0 28 28" className={`${className} shrink-0`} fill="none" aria-hidden="true">
+      <rect
+        width="28"
+        height="28"
+        rx="7"
+        className={tone === 'light' ? 'fill-brand-500' : 'fill-brand-600'}
+      />
+      <rect x="6" y="15" width="4" height="7" rx="1" className="fill-white" />
+      <rect x="12" y="10" width="4" height="12" rx="1" className="fill-signal" />
+      <rect x="18" y="6" width="4" height="16" rx="1" className="fill-white" />
+    </svg>
   );
 }

@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 
-export type SwatchKind = 'solid' | 'stripes' | 'dark' | 'highlight';
+export type SwatchKind = 'solid' | 'stripes' | 'median' | 'average' | 'marker';
 
 const SWATCH: Record<SwatchKind, string> = {
-  solid: 'bg-brand-600',
-  stripes: 'bg-[repeating-linear-gradient(45deg,#2563eb,#2563eb_2px,#bfdbfe_2px,#bfdbfe_4px)]',
-  dark: 'bg-ink',
-  highlight: 'bg-signal',
+  solid: 'bg-chart-4',
+  stripes: 'bg-[repeating-linear-gradient(45deg,#2f5c99,#2f5c99_2px,#c7d8f2_2px,#c7d8f2_4px)]',
+  median: 'bg-chart-5',
+  average: 'bg-[repeating-linear-gradient(45deg,#5b86c4,#5b86c4_2px,#d3e0f4_2px,#d3e0f4_4px)]',
+  marker: 'bg-chart-5 !w-0.5',
 };
 
 // The legend names each series in words and gives it a pattern, so it does not depend on

@@ -38,7 +38,7 @@ describe('outliers, HR managers only', () => {
       'Contract',
       '€120,000.00',
       '€60,000.00',
-      '▲ +100% above the group median',
+      '+100% above the group median',
       '9',
     ]);
     expect(within(low).getByText(/−60%/)).toBeInTheDocument();
@@ -47,6 +47,19 @@ describe('outliers, HR managers only', () => {
     expect(within(region).getByRole('status')).toHaveTextContent(
       'Showing 2 of 3, largest difference first.',
     );
+  });
+
+  it('shows the difference as a warning pill with an arrow icon, and a distance bar that is hidden from assistive technology', async () => {
+    start('HR_MANAGER');
+    const region = await screen.findByRole('region', { name: 'Outliers' });
+    const table = await within(region).findByRole('table', { name: 'Outliers', hidden: true });
+    const low = within(table).getByRole('row', { name: /Outlier Low/, hidden: true });
+
+    const pill = within(low).getByText(/−60%/);
+    expect(pill).toHaveClass('bg-warning-light', 'text-warning');
+    expect(pill.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    const bar = pill.parentElement?.querySelector('[aria-hidden="true"].rounded-full');
+    expect(bar).not.toBeNull();
   });
 
   it('offers the same people as cards for small screens', async () => {

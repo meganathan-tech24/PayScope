@@ -19,7 +19,7 @@ export function CurrencyControls({ options, currency, usd, onCurrency, onUsd }: 
   const hintId = `${switchId}-hint`;
 
   return (
-    <div className="grid gap-4 sm:grid-cols-[minmax(0,16rem)_1fr] sm:items-end">
+    <div className="grid gap-4 rounded-lg border border-neutral-200 bg-white p-4 sm:grid-cols-[minmax(0,16rem)_1fr] sm:items-end">
       <SelectField
         label="Currency"
         value={currency}
@@ -37,7 +37,7 @@ export function CurrencyControls({ options, currency, usd, onCurrency, onUsd }: 
           </option>
         ))}
       </SelectField>
-      <div className="relative flex min-h-11 items-start gap-3 rounded-md border border-neutral-200 bg-white px-4 py-3">
+      <div className="relative flex min-h-11 items-start gap-3 rounded-lg bg-neutral-50 px-4 py-3">
         <input
           id={switchId}
           type="checkbox"

@@ -209,7 +209,13 @@ export function EmployeeFormModal({ employee, onClose, onSaved }: Props) {
         </datalist>
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <Button type="button" variant="secondary" onClick={onClose} disabled={mutation.isPending}>
+          <Button
+            type="button"
+            tone="neutral"
+            look="outline"
+            onClick={onClose}
+            disabled={mutation.isPending}
+          >
             Cancel
           </Button>
           <Button type="submit" loading={mutation.isPending}>

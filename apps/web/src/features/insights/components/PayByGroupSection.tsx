@@ -67,6 +67,7 @@ export function PayByGroupSection({ payBy, onPayBy, usd, currency }: Props) {
             items={[
               { kind: 'solid', label: '25th percentile to median' },
               { kind: 'stripes', label: 'Median to 75th percentile' },
+              { kind: 'marker', label: 'Median (also written at the end of each bar)' },
             ]}
           />
           <p className="text-sm text-neutral-600">
@@ -117,7 +118,7 @@ export function PayByGroupSection({ payBy, onPayBy, usd, currency }: Props) {
                 ) : null}
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-200">
+            <tbody>
               {rows.map((row) => (
                 <tr key={`${row.key}-${row.currency}`}>
                   <th scope="row" className="px-4 py-2 font-medium">

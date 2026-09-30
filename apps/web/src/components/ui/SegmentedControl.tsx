@@ -34,7 +34,7 @@ export function SegmentedControl<T extends string>({
               onChange={() => onChange(option.value)}
               className="peer sr-only"
             />
-            <span className="flex min-h-11 cursor-pointer items-center rounded-md px-3 text-sm font-medium text-neutral-700 hover:bg-white peer-checked:bg-ink peer-checked:font-semibold peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-brand-500 peer-focus-visible:ring-offset-2">
+            <span className="flex min-h-11 cursor-pointer items-center rounded-md px-3 text-sm font-medium text-neutral-700 hover:bg-white peer-checked:bg-ink peer-checked:font-semibold peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-focus peer-focus-visible:ring-offset-2">
               {option.label}
             </span>
           </label>
